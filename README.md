@@ -1,4 +1,4 @@
-# Educational Nuvoton MS51FB9AE Microcontroller & OS Simulator
+# Nuvoton MS51FB9AE Microcontroller & OS Simulator
 
 ## 1. Problem Objective
 We want to build a software simulator for the Nuvoton MS51FB9AE microcontroller. It will show how the CPU runs basic assembly instructions and how a simple operating system manages multiple programs at the same time using different scheduling algorithms.
@@ -23,7 +23,7 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 
 ## 5. Team Members
 * **Student 1 (Team Leader):** Gilon Prince Serrao
-* **Student 2:** asad moidhin
+* **Student 2:** Asad Moidhin
 * **Student 3:** Melbin K Vinod
 * **Student 4:** Preemal Simona Pinto
 
@@ -31,11 +31,39 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 | Team Member | Primary Role | Secondary Role | Week 1 Responsibilities |
 | :--- | :--- | :--- | :--- |
 | Gilon Prince Serrao | CPU Core & Instruction Decoder | Architecture & Repository Lead | GitHub repo setup, branch management, base structure |
-| asad moidhin | Memory & Stack Management | System Documentation |  memory map layout, documentation |
+| asad moidhin | Memory & Stack Management | System Documentation |  memory map layout, documentation | CPU support |
 | Melbin K Vinod  | Data Structures & Process Control | Unit Testing & QA | PCB design, Ready Queue and Circular Queue logic |
 | Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | README and documentation | Scheduling algorithms (FCFS, RR, Priority) & UI |
 
 ## 7. Selected Programming Language
 * **Language:** Java
 * **Reason for Selection:** We all learned Java in our previous classes, so we are comfortable with it. Object-Oriented Programming makes it really easy to treat the CPU, Memory, and Registers as separate objects. Also, Java has built-in queues and lists, which will save us a lot of time when building the OS scheduling part.
-* **Advantages:** OOP principles allow clean modeling of hardware modules (CPU, Memory, Registers) as distinct objects. The Java Collections framework provides built-in data structures (Queues, Stacks) for scheduling management.
+
+## 8. Initial System Architecture
+![System Architecture](images/system architecture.jpeg)
+
+## 9. Initial Development Plan
+
+* **Week 1: Project Setup & Basic Design**
+  * Set up the GitHub repository, team branches, and workflow rules.
+  * Draw the main system architecture diagram and write the README file.
+
+* **Week 2: Hardware Layer Implementation**
+  * Code the main CPU registers (A, B, PSW, PC, SP) and the fetch-decode-execute loop.
+  * Build the memory system (16 KB Flash and 1 KB RAM for SRAM and Stack).
+  * Add basic simulation logic for GPIO ports, timers, and interrupts.
+
+* **Week 3: OS & Process Management**
+  * Design Process Control Blocks (PCBs) to save process states and register snapshots.
+  * Set up Ready Queues and Circular Queues to manage running programs.
+  * Code the FCFS, Round Robin, and Priority scheduling algorithms along with context switching.
+
+* **Week 4: User Interface & Controls**
+  * Build control buttons for Run, Step, Reset, and Load Program.
+  * Create screen views to display real-time register values, RAM usage, and running tasks.
+  * Connect the UI screens to the backend OS and hardware code.
+
+* **Week 5: Testing & Final Details**
+  * Test real assembly code programs on the simulator to check for errors.
+  * Measure performance stats like waiting time, turnaround time, and CPU usage.
+  * Fix bugs, clean up code, and prepare the project presentation.
