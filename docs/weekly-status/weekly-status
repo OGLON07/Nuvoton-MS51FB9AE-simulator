@@ -1,19 +1,45 @@
-# Weekly Status Update - Week 1
+ Weekly Status Update - Week 1
 
-## Planned Work
 
-## Completed Work
+ Planned Work
 
-## Pending Work
+established project team, assign primary and secondary roles and create github repo
+finalized language selection and document Nuvoton MS51FB9AE hardware features
+prepare initial system block diagram and repository file tree
 
-## Issues Encountered
 
-## Decisions Made
+Completed Work
+public github repository fully initialized on week-01 branch
+readme.md updated
+Added standard .gitignore file.
+docs populated with memory mapping, pcb structure, and architecture specifications
+meeting 01 recorded
 
-## Individual Contributions
+Pending Work
+formal approval of language selection from faculty
 
-## Work Accepted
+Issues Encountered
+initial setup coordination across team git accounts
 
-## Work Carried Forward
+Decisions Made
+selected java for oop component modeling and cross-platform ui integration
 
-## Week 2 Plan
+
+Individual Contributions:
+Gilon Prince Serrao: Created the public GitHub repository, configured .gitignore, built the project folder structure, set up the week-01 branch, and assigned roles and tasks to team members.
+Asad Moidhin: Documented the decisions made by the team and completed the weekly-status report.
+Preemal Simona Pinto: Researched simulator requirements, created, and finalized the README.md file covering microcontroller specs and initial development plan.
+Melbin K Vinod: Recorded team discussions, documented agenda and decisions, and created the meeting report.
+
+Work Accepted
+programming language finalised
+initial architecture design
+GitHub repository structure.
+Readme file done
+
+Work Carried Forward
+
+Week 2 Plan
+implementation of cpu registers data structures
+SRAM and flash ROM array allocation
+Improving the simulator architecture.

@@ -1,0 +1,28 @@
+Date:27-08-2026
+Meeting Number:01
+Participants:4
+
+Agenda:
+1. Splitting responsibilities between all the members.
+2. Selecting the programming language
+3. Designing the initial simulator architecture
+
+Discussion:
+After a brief discussion all the members have taken up different responsibilities in the project
+Discussed about which programming language to use.
+Discussed on the initial simulator architecture.c
+
+Decisions:
+1.Team has decided to use Java for the programming language
+2.Gilon will handle CPU & Instruction Execution and Integration & GitHub
+3.Preemal will do OS Scheduling & Context Switching and UI and Integration and will handle the work on the readme file.
+4.Asad will handle Memory and Stack and CPU support.
+5.Melbin will do Data Structures & Process Management and Testing.
+
+Action Items:
+Student 1:Gilon -> CPU & Instruction Execution and Integration & GitHub
+Student 2:Preemal -> OS Scheduling & Context Switching and UI and Integration working on the readme file.
+Student 3:Asad -> Memory and Stack and CPU support.
+Student 4:Melbin -> Data Structures & Process Management and Testing.
+
+Next Meeting: 03-09-2026
