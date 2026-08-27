@@ -1,14 +1,28 @@
 # Weekly Status Update - Week 1
 
+
 ## Planned Work
 
+established project team, assign primary and secondary roles and create github repo
+finalized language selection and document Nuvoton MS51FB9AE hardware features
+prepare initial system block diagram and repository file tree
+
+
 ## Completed Work
+public github repository fully initialized on week-01 branch
+readme.md updated
+docs populated with memory mapping, pcb structure, and architecture specifications
+meeting 01 recorded
 
 ## Pending Work
+formal approval of language selection from faculty
 
 ## Issues Encountered
+initial setup coordination across team git accounts
 
 ## Decisions Made
+selected java for oop component modeling and cross-platform ui integration
+
 
 ## Individual Contributions
 
