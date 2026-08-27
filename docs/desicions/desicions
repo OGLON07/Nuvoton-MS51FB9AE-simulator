@@ -1,1 +1,28 @@
+## Completed Work
+Created Public github repo and set up folders
+Added standard .gitignore with nothing updated in it for now
+Added all 4 members as collaborators in github 
+Finalised JAVA JDK 17+ as the progeamming language 
+Studied the architecture for the Nuvoton MS51FB9AE microcontroller
+Designed initial simulator architecture 
+Split work between 4 members 
 
+## Work Tested
+verified all the members are contributors for thegit repo
+
+## Work Accepted
+programming language finalised
+initial architecture
+
+## Work Not Completed
+havent gotten a Unified Modeling Language diagram 
+
+## Open Issues
+*Issue #01:* finalising exact opcode from instructions
+
+## Concerns
+concerned about ensuring exact cycle to cycle simulation of the microcontrolller's hardwaer timing 
+
+## Work carryign forward to week 2 
+implementation of cpu registers data structures
+SRAM and flash ROM array allocation
