@@ -44,26 +44,26 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 
 ## 9. Initial Development Plan
 
-* **Week 1: Project Setup & Basic Design**
+* **1: Project Setup & Basic Design**
   * Set up the GitHub repository, team branches, and workflow rules.
   * Draw the main system architecture diagram and write the README file.
 
-* **Week 2: Hardware Layer Implementation**
+* **2: Hardware Layer Implementation**
   * Code the main CPU registers (A, B, PSW, PC, SP) and the fetch-decode-execute loop.
   * Build the memory system (16 KB Flash and 1 KB RAM for SRAM and Stack).
   * Add basic simulation logic for GPIO ports, timers, and interrupts.
 
-* **Week 3: OS & Process Management**
+* **3: OS & Process Management**
   * Design Process Control Blocks (PCBs) to save process states and register snapshots.
   * Set up Ready Queues and Circular Queues to manage running programs.
   * Code the FCFS, Round Robin, and Priority scheduling algorithms along with context switching.
 
-* **Week 4: User Interface & Controls**
+* **4: User Interface & Controls**
   * Build control buttons for Run, Step, Reset, and Load Program.
   * Create screen views to display real-time register values, RAM usage, and running tasks.
   * Connect the UI screens to the backend OS and hardware code.
 
-* **Week 5: Testing & Final Details**
+* **5: Testing & Final Details**
   * Test real assembly code programs on the simulator to check for errors.
   * Measure performance stats like waiting time, turnaround time, and CPU usage.
   * Fix bugs, clean up code, and prepare the project presentation.
