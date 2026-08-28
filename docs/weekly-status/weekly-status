@@ -16,7 +16,8 @@ docs populated with memory mapping, pcb structure, and architecture specificatio
 meeting 01 recorded
 
 Pending Work
-formal approval of language selection from faculty
+Complete simulator implementation.
+Detailed implementation of instructions.
 
 Issues Encountered
 initial setup coordination across team git accounts
