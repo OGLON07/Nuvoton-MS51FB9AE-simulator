@@ -7,12 +7,12 @@ We want to build a software simulator for the Nuvoton MS51FB9AE microcontroller.
 Design and implement a simulator for the Nuvoton MS51FB9AE processor. The software must emulate fundamental hardware components (registers, memory, stack, and peripherals) while acting as a lightweight OS that manages multiple processes using Process Control Blocks (PCBs), ready queues, context switching, and FCFS, Round Robin, and Priority scheduling algorithms.
 
 ## 3. Project Scope
-* **Hardware:** Simulating the 8051 core registers (like ACC, B, PC, SP), 256 bytes of RAM, and 16 KB of Flash memory.
-* **Instructions:** Running basic assembly commands (math, logic, moving data).
-* **Peripherals:** Adding simple features like a Timer, Interrupts, and GPIO pins.
-* **OS Management:** Making PCBs to track if a process is Ready, Running, or Blocked.
-* **Scheduling:** Writing the logic for FCFS, Round Robin, and Priority scheduling, and making sure context switching works.
-* **UI & Stats:** A simple interface to load code, run it step-by-step, and see stats like waiting time and CPU usage.
+* **Hardware:** Simulating key CPU registers (like A, B, PC, SP), 256 bytes of RAM, and 16 KB of Flash memory.
+* **Instructions:** Running basic assembly commands for simple math, logic, and moving data around.
+* **Peripherals:** Adding basic components like input/output pins, timers, and simple interrupts.
+* **OS Management:** Tracking program states to see if a task is Ready, Running, or Waiting.
+* **Scheduling:** Writing logic for FCFS, Round Robin, and Priority scheduling to switch between tasks smoothly.
+* **UI & Stats:** Building a clean screen to load code, step through execution line-by-line, and check CPU stats.
 
 ## 4. Microcontroller Being Simulated
 * **Device:** Nuvoton MS51FB9AE
@@ -28,12 +28,13 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 * **Student 4:** Preemal Simona Pinto
 
 ## 6. Team Responsibilities
-| Team Member | Primary Role | Secondary Role | Week 1 Responsibilities |
+
+| Team Member | Primary Role | Secondary Role | Week 1 Tasks |
 | :--- | :--- | :--- | :--- |
-| Gilon Prince Serrao | CPU Core & Instruction Decoder | Architecture & Repository Lead | GitHub repo setup, branch management, base structure |
-| asad moidhin | Memory & Stack Management | System Documentation |  memory map layout, documentation | CPU support |
-| Melbin K Vinod  | Data Structures & Process Control | Unit Testing & QA | PCB design, Ready Queue and Circular Queue logic |
-| Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | README and documentation | Scheduling algorithms (FCFS, RR, Priority) & UI |
+| **Gilon Prince Serrao** | CPU Core & Instruction Decoder | Architecture & Repository Lead | Create public GitHub repository, configure `.gitignore`, build project folder structure, set up `week-01` branch, and assign tasks. |
+| **Preemal Simona Pinto** | Memory & Stack Management | System Documentation | Research simulator requirements, create, and finalize `README.md` file covering microcontroller specs and initial development plan. |
+| **Asad Moidhin** | Data Structures & Process Control | Status Tracking & Reporting | Document decisions made by the team and complete the weekly-status report. |
+| **Melbin K Vinod** | OS Scheduler & Context Switching | Unit Testing & QA | Record team discussions, document agenda and decisions, and create the meeting report. |
 
 ## 7. Selected Programming Language
 * **Language:** Java
@@ -43,27 +44,25 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 ![System Architecture](images/system%20architecture.jpeg)
 
 ## 9. Initial Development Plan
-
-* **1: Project Setup & Basic Design**
-  * Set up the GitHub repository, team branches, and workflow rules.
+* **Week 1: Setup & Basic Design**
+  * Set up our GitHub repo, team branches, and basic workflow rules.
   * Draw the main system architecture diagram and write the README file.
 
-* **2: Hardware Layer Implementation**
-  * Code the main CPU registers (A, B, PSW, PC, SP) and the fetch-decode-execute loop.
-  * Build the memory system (16 KB Flash and 1 KB RAM for SRAM and Stack).
-  * Add basic simulation logic for GPIO ports, timers, and interrupts.
+* **Week 2: Hardware Simulation**
+  * Code the basic CPU registers (A, B, PC, SP) and set up how instructions run.
+  * Build the memory layout for RAM and Flash memory space.
+  * Add simple logic for pins, timers, and basic interrupts.
 
-* **3: OS & Process Management**
-  * Design Process Control Blocks (PCBs) to save process states and register snapshots.
-  * Set up Ready Queues and Circular Queues to manage running programs.
-  * Code the FCFS, Round Robin, and Priority scheduling algorithms along with context switching.
+* **Week 3: OS & Scheduling**
+  * Build Process Control Blocks and queues to track running programs.
+  * Code our scheduling methods (FCFS, Round Robin, Priority) and task switching.
 
-* **4: User Interface & Controls**
-  * Build control buttons for Run, Step, Reset, and Load Program.
-  * Create screen views to display real-time register values, RAM usage, and running tasks.
-  * Connect the UI screens to the backend OS and hardware code.
+* **Week 4: Screen & Controls**
+  * Build simple interface buttons like Run, Step, Reset, and Load Program.
+  * Create panels to display live register values, memory use, and active tasks.
+  * Connect the screen interface directly to our backend logic.
 
-* **5: Testing & Final Details**
-  * Test real assembly code programs on the simulator to check for errors.
-  * Measure performance stats like waiting time, turnaround time, and CPU usage.
-  * Fix bugs, clean up code, and prepare the project presentation.
+* **Week 5: Testing & Wrap-Up**
+  * Run test assembly programs on our simulator to catch any hidden bugs.
+  * Calculate performance stats like waiting time, turnaround time, and CPU usage.
+  * Clean up the code and prepare our final slides for presentation.
