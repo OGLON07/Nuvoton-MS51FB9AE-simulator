@@ -44,25 +44,25 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 ![System Architecture](images/system%20architecture.jpeg)
 
 ## 9. Initial Development Plan
-* **Week 1: Setup & Basic Design**
+* **1: Setup & Basic Design**
   * Set up our GitHub repo, team branches, and basic workflow rules.
   * Draw the main system architecture diagram and write the README file.
 
-* **Week 2: Hardware Simulation**
+* **2: Hardware Simulation**
   * Code the basic CPU registers (A, B, PC, SP) and set up how instructions run.
   * Build the memory layout for RAM and Flash memory space.
   * Add simple logic for pins, timers, and basic interrupts.
 
-* **Week 3: OS & Scheduling**
+* **3: OS & Scheduling**
   * Build Process Control Blocks and queues to track running programs.
   * Code our scheduling methods (FCFS, Round Robin, Priority) and task switching.
 
-* **Week 4: Screen & Controls**
+* **4: Screen & Controls**
   * Build simple interface buttons like Run, Step, Reset, and Load Program.
   * Create panels to display live register values, memory use, and active tasks.
   * Connect the screen interface directly to our backend logic.
 
-* **Week 5: Testing & Wrap-Up**
+* **5: Testing & Wrap-Up**
   * Run test assembly programs on our simulator to catch any hidden bugs.
   * Calculate performance stats like waiting time, turnaround time, and CPU usage.
   * Clean up the code and prepare our final slides for presentation.
