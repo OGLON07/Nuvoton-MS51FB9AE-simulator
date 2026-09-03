@@ -41,7 +41,7 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 * **Reason for Selection:** We all learned Java in our previous classes, so we are comfortable with it. Object-Oriented Programming makes it really easy to treat the CPU, Memory, and Registers as separate objects. Also, Java has built-in queues and lists, which will save us a lot of time when building the OS scheduling part.
 
 ## 8. Initial System Architecture
-![System Architecture](images/system%20architecture.jpeg)
+![System Architecture](images/System%20Architecture%202.png)
 
 ## 9. Initial Development Plan
 * **1: Setup & Basic Design**
