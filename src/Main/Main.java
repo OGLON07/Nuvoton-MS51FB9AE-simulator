@@ -3,7 +3,7 @@ package Main;
 import Main.CPU.CPU;
 
 
-// In progress still not comppleted
+// In progress still not comppleted waiting for ui.
 
 
 public class Main {
