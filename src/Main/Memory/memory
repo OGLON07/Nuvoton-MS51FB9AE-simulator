@@ -1,12 +1,10 @@
 /**
- * MemoryMicro.java
  *
  * It has two arrays:
  *   1. programMemory (ROM) - stores the program instructions (16 KB)
  *   2. dataMemory (RAM)    - stores variables/data while running (256 bytes)
  *
  * We use int[] instead of byte[] so values stay between 0 and 255
- * (Java's byte type can go negative, which we don't want here).
  */
 public class MemoryMicro {
 
