@@ -7,7 +7,7 @@ public class Registers {
     // Special registers
     private int accumulator; 
     private int b;           
-    private int pc;          
+    private int pc;         
     private int sp;         
     private int psw;       
 
@@ -88,6 +88,31 @@ public void setCarry(boolean value) {
         psw |= 0x80;
     } else {
         psw &= ~0x80;
+    }
+}
+// Auxiliary Carry (AC) - PSW bit 6
+public boolean isAuxiliaryCarry() {
+    return (psw & 0x40) != 0;
+}
+
+public void setAuxiliaryCarry(boolean value) {
+    if (value) {
+        psw |= 0x40;
+    } else {
+        psw &= ~0x40;
+    }
+}
+
+// Overflow (OV) - PSW bit 2
+public boolean isOverflow() {
+    return (psw & 0x04) != 0;
+}
+
+public void setOverflow(boolean value) {
+    if (value) {
+        psw |= 0x04;
+    } else {
+        psw &= ~0x04;
     }
 }
 
