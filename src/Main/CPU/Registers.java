@@ -78,6 +78,18 @@ public class Registers {
     public void setPSW(int value) {
         psw = value & 0xFF;
     }
+    
+    public boolean isCarry() {
+    return (psw & 0x80) != 0;
+}
+
+public void setCarry(boolean value) {
+    if (value) {
+        psw |= 0x80;
+    } else {
+        psw &= ~0x80;
+    }
+}
 
     // ---------- Reset ----------
 
