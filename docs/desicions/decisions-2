@@ -4,7 +4,7 @@ SJMP rel, HALT.
 The CPU core has been implemented with:Registers R0–R7, Accumulator A, Register B, Program Counter PC, Stack Pointer SP, Program Status Word PSW, Carry (CY), Auxiliary Carry (AC), 
 and Overflow (OV) flags, Program memory, Data memory.
 FETCH → DECODE → EXECUTE Design
-A basic Java Swing user interface has been implemented.\
+A basic Java Swing user interface has been implemented.
   
 Work Tested
 Individual instruction tests
