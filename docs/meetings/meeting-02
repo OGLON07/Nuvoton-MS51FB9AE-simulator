@@ -1,0 +1,31 @@
+Date:06-09-2026
+Meeting Number:02
+Participants:4
+
+Agenda:
+1. Splitting responsibilities between all the members.
+2. Deciding on the different instructions to be implemented this week.
+3. Discussing about the new architecture diagram.
+4. Week 2 repository folder structure.
+
+Discussion:
+After a brief discussion all the members were given different responsibility for this week.
+Discussed about the instructions being implemented.
+discussed about the architecture diagram
+how the src folder structure will be.
+
+Decisions:
+1.Our team has successfully split the work between us.
+2.Gilon will handle CPU/register implementation, fetch-decode-execute cycle,  Instruction framework and GitHub integration.
+3.Preemal will do UI, Execution Trace and Testing
+4.Asad will handle Memory (program memory, data memory) and stack
+5.Melbin will do Testing/documentation/demo support.
+6.Decided to implement 10 instructions: move, add, increement, decreement, jump, multiplication, logical AND, subtraction, data transfer, termination
+
+Action Items:
+Student 1:Gilon -> CPU/register implementation, fetch-decode-execute cycle, Instruction framework and GitHub integration.
+Student 2:Preemal -> UI, Execution Trace and Testing
+Student 3:Asad -> Memory (program memory, data memory) and stack
+Student 4:Melbin -> Testing/documentation/demo support.
+
+Next Meeting: 07-09-2026

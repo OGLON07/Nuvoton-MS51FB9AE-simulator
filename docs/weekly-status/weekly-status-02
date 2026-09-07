@@ -1,0 +1,68 @@
+ Weekly Status Update - Week 2
+
+
+ Planned Work
+Implement the basic CPU structure for the MS51FB9AE simulator.
+Implement the required registers and CPU state.
+Implement program and data memory.
+Define the instruction representation and instruction execution framework.
+Implement at least 8 processor-specific instructions.
+Implement the FETCH → DECODE → EXECUTE execution flow.
+Develop a basic simulator UI with LOAD, RESET, STEP, and RUN controls.
+Display CPU state, current instruction, and execution trace.
+Document the implementation, testing, issues, and Week 3 plan.
+
+
+Completed Work
+The simulator currently implements the following 10 instructions: MOV A, #data, MOV A, #data,ADD A, #data,SUBB A, #data, INC A, DEC A, MUL AB, ANL A, #data,
+SJMP rel, HALT.
+The CPU core has been implemented with:Registers R0–R7, Accumulator A, Register B, Program Counter PC, Stack Pointer SP, Program Status Word PSW, Carry (CY), Auxiliary Carry (AC), 
+and Overflow (OV) flags, Program memory, Data memory.
+FETCH → DECODE → EXECUTE has been implemented.
+A basic Java Swing user interface has been implemented.
+
+Pending Work
+Further improve UI presentation.
+
+Issues Encountered
+Incorrect/missing package and folder structure initially caused Java classes to be difficult to compile and integrate.
+The demonstration program initially did not contain all selected instruction types.
+Incomplete multi-byte instructions were not initially detected correctly when an operand byte was missing.
+SJMP instruction required careful handling of signed relative offsets and PC updates.
+
+Decisions Made
+Decided to use and implement 10 instructions.
+Use HALT as a simulator-defined termination instruction.
+
+Individual Contributions:
+Gilon Prince Serrao:Implemented/integrated the CPU core, Implemented registers and CPU state, Implemented FETCH → DECODE → EXECUTE flow,
+Implemented instruction decoding and execution integration, Integrated and tested the simulator components. Created the folder structure for the codebase, 
+Worked on the decisions, weekly status report, readme file, test document. Did overall bug fixing and debugging, github integration.
+
+Asad Moidhin: Implemented/integrated memory functionality, Worked on instruction representation and related components, Participated in testing and integration.
+
+Preemal Simona Pinto: Developed the simulator UI, Implemented CPU state and execution trace display, Worked on UI controls and execution visualization.
+
+Melbin K Vinod: Recorded team discussions, documented agenda and decisions, and created the meeting report.
+
+Work Accepted
+10 instructions implemented
+CPU pipeline working
+FETCH → DECODE → EXECUTE execution is functional.
+UI working
+Demonstration program successfully executes.
+Week 2 implementation is suitable as the baseline for further development.
+
+
+Work Carried Forward:
+Improve memory visibility so important data-memory changes can be observed in the UI
+Improve error handling for invalid opcodes and incomplete instructions.
+Improve the UI presentation so CPU state and execution progress are easier to understand.
+
+Week 3 Plan:
+xpand the simulator's supported instruction set.
+Improve CPU-state and memory visualization.
+Improve execution tracing.
+Add additional instruction and edge-case tests.
+Improve the demonstration program.
+Review and clean up the existing CPU, memory, instruction, and UI code.
