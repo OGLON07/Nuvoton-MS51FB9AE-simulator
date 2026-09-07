@@ -12,12 +12,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.*;
+
 
 public class SimulatorUI extends JFrame {
 
     private final CPU cpu;
 
-    private final JTextArea programArea = new JTextArea();
+    private final JTextPane programArea = new JTextPane();
     private final JTextArea traceArea = new JTextArea();
     private final JLabel statusLabel = new JLabel("Status: READY");
     private final JLabel currentInstructionLabel = new JLabel("Current instruction: —");
@@ -104,6 +106,8 @@ public class SimulatorUI extends JFrame {
         programArea.setEditable(false);
         programArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
         programArea.setMargin(new Insets(8, 8, 8, 8));
+        // Prevent JTextPane from wrapping lines so it behaves like the old JTextArea
+        programArea.putClientProperty("JEditorPane.honorDisplayProperties", Boolean.TRUE);
         panel.add(new JScrollPane(programArea), BorderLayout.CENTER);
         panel.add(currentInstructionLabel, BorderLayout.SOUTH);
         return panel;
@@ -406,25 +410,54 @@ public class SimulatorUI extends JFrame {
 
     private void refreshProgramDisplay() {
         Memory memory = cpu.getMemory();
-        StringBuilder text = new StringBuilder();
         int size = memory.getProgramSize();
-        for (int address = 0; address < size;) {
-            int opcode = memory.readProgram(address);
-            int length = instructionLength(opcode);
-            text.append(String.format("%04X  ", address));
-            for (int i = 0; i < length && address + i < size; i++) {
-                text.append(String.format("%02X ", memory.readProgram(address + i)));
+        int currentPC = cpu.getRegisters().getPC();
+
+        // Build styled document with a red arrow on the current instruction
+        StyledDocument doc = programArea.getStyledDocument();
+        programArea.setText(""); // clear
+
+        // Normal text style
+        SimpleAttributeSet normal = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(normal, Font.MONOSPACED);
+        StyleConstants.setFontSize(normal, 14);
+
+        // Red arrow style
+        SimpleAttributeSet arrowStyle = new SimpleAttributeSet(normal);
+        StyleConstants.setForeground(arrowStyle, Color.RED);
+        StyleConstants.setBold(arrowStyle, true);
+
+        try {
+            for (int address = 0; address < size;) {
+                int opcode = memory.readProgram(address);
+                int length = instructionLength(opcode);
+
+                // Arrow indicator for current PC
+                if (address == currentPC) {
+                    doc.insertString(doc.getLength(), "\u25B6 ", arrowStyle);
+                } else {
+                    doc.insertString(doc.getLength(), "  ", normal);
+                }
+
+                // Address + hex bytes + mnemonic
+                StringBuilder line = new StringBuilder();
+                line.append(String.format("%04X  ", address));
+                for (int i = 0; i < length && address + i < size; i++) {
+                    line.append(String.format("%02X ", memory.readProgram(address + i)));
+                }
+                line.append("   ").append(disassemble(memory, address, opcode)).append('\n');
+                doc.insertString(doc.getLength(), line.toString(), normal);
+
+                address += Math.min(length, Math.max(1, size - address));
             }
-            text.append("   ").append(disassemble(memory, address, opcode)).append('\n');
-            address += Math.min(length, Math.max(1, size - address));
-        }
-        programArea.setText(text.toString());
+        } catch (BadLocationException ignored) { }
+
+        // Update the current instruction label
         Instruction decoded = cpu.getDecodedInstruction();
         if (decoded != null) {
             currentInstructionLabel.setText("Current instruction: " + formatInstruction(decoded));
         } else {
-            int pc = cpu.getRegisters().getPC();
-            currentInstructionLabel.setText("Current instruction: " + (pc < size ? disassemble(memory, pc, memory.readProgram(pc)) : "—"));
+            currentInstructionLabel.setText("Current instruction: " + (currentPC < size ? disassemble(memory, currentPC, memory.readProgram(currentPC)) : "\u2014"));
         }
     }
 
