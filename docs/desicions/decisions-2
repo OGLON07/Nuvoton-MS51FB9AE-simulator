@@ -1,0 +1,41 @@
+Completed Work
+The simulator currently implements the following 10 instructions: MOV A, #data, MOV A, #data,ADD A, #data,SUBB A, #data, INC A, DEC A, MUL AB, ANL A, #data,
+SJMP rel, HALT.
+The CPU core has been implemented with:Registers R0–R7, Accumulator A, Register B, Program Counter PC, Stack Pointer SP, Program Status Word PSW, Carry (CY), Auxiliary Carry (AC), 
+and Overflow (OV) flags, Program memory, Data memory.
+FETCH → DECODE → EXECUTE Design
+A basic Java Swing user interface has been implemented.\
+  
+Work Tested
+Individual instruction tests
+CPU/FETCH/DECODE/EXECUTE tests
+UI Step/Run tests
+Complete demonstration program test
+Test results
+  
+Work Accepted
+10 instructions implemented
+CPU pipeline working
+UI working
+Demonstration program successfully terminates
+
+Work Not Completed
+Larger instruction set
+More advanced memory/addressing modes
+Peripherals
+Process scheduling integration
+
+Issues
+Incorrect/missing package and folder structure initially caused Java classes to be difficult to compile and integrate.
+The demonstration program initially did not contain all selected instruction types.
+Incomplete multi-byte instructions were not initially detected correctly when an operand byte was missing.
+  
+Concerns
+Current instruction set is still small.
+HALT is simulator-defined.
+MUL AB currently has limited demonstration usefulness.
+
+Work carryign forward to week 3
+Improve memory visibility so important data-memory changes can be observed in the UI
+Improve error handling for invalid opcodes and incomplete instructions.
+Improve the UI presentation so CPU state and execution progress are easier to understand.
