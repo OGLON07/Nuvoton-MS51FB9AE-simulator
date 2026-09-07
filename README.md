@@ -28,12 +28,12 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 * **Student 4:** Preemal Simona Pinto
 
 ## 6. Team Responsibilities
-| Team Member | Primary Role | Secondary Role | Week 1 Responsibilities |
+| Team Member | Primary Role | Secondary Role | Week 2 Responsibilities |
 | :--- | :--- | :--- | :--- |
-| Gilon Prince Serrao | CPU Core & Instruction Decoder | Architecture & Repository Lead | GitHub repo setup, branch management, base structure |
-| asad moidhin | Memory & Stack Management | System Documentation |  memory map layout, documentation | CPU support |
-| Melbin K Vinod  | Data Structures & Process Control | Unit Testing & QA | PCB design, Ready Queue and Circular Queue logic |
-| Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | README and documentation | Scheduling algorithms (FCFS, RR, Priority) & UI |
+| Gilon Prince Serrao | CPU Core & Instruction Decoder | Architecture & Repository Lead | Integrating the CPU core, Implementing registers and CPU state, Implementing FETCH → DECODE → EXECUTE flow |
+| asad moidhin | Memory & Stack Management | System Documentation |  Implementing memory functionality, instruction representation and related components |
+| Melbin K Vinod  | Data Structures & Process Control | Unit Testing & QA | team discussions, documenting agenda and decisions, and creating the meeting report.|
+| Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | Developing the simulator UI, Implementing CPU state and execution trace display,UI controls and execution visualization. |
 
 ## 7. Selected Programming Language
 * **Language:** Java
