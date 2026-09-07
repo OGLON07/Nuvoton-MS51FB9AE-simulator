@@ -20,7 +20,7 @@ Decisions:
 3.Preemal will do UI, Execution Trace and Testing
 4.Asad will handle Memory (program memory, data memory) and stack
 5.Melbin will do Testing/documentation/demo support.
-6.Decided to implement 9 instructions: add, increement, decreement, jump, multiplication, logical AND, subtraction, data transfer, termination
+6.Decided to implement 10 instructions: move, add, increement, decreement, jump, multiplication, logical AND, subtraction, data transfer, termination
 
 Action Items:
 Student 1:Gilon -> CPU/register implementation, fetch-decode-execute cycle, Instruction framework and GitHub integration.
