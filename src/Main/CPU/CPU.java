@@ -33,6 +33,13 @@ public class CPU {
     public Memory getMemory() {
         return memory;
     }
+    public int getFetchedOpcode() {
+        return fetchedOpcode;
+    }
+
+    public Instruction getDecodedInstruction() {
+        return decodedInstruction;
+    }
 
     // ---------- FETCH ----------
 
