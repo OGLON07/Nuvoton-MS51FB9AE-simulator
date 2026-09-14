@@ -3,6 +3,7 @@ package Main.UI;
 import Main.CPU.CPU;
 import Main.CPU.Registers;
 import Main.Memory.Memory;
+import Main.Queue.Queue;
 import Main.instruction.Instruction;
 import java.awt.*;
 import java.io.File;
@@ -18,10 +19,12 @@ import javax.swing.text.*;
 public class SimulatorUI extends JFrame {
 
     private final CPU cpu;
+    private final Queue queue;
 
     private final JTextPane programArea = new JTextPane();
     private final JTextArea traceArea = new JTextArea();
     private final JTextArea dataMemoryArea = new JTextArea();
+    private final JTextArea queueArea = new JTextArea();
     private final JLabel statusLabel = new JLabel("Status: READY");
     private final JLabel currentInstructionLabel = new JLabel("Current instruction: —");
 
@@ -36,6 +39,7 @@ public class SimulatorUI extends JFrame {
     private final JLabel ovLabel = valueLabel();
 
     private final JButton loadButton = new JButton("LOAD");
+    private final JButton queueDemoButton = new JButton("QUEUE DEMO");
     private final JButton resetButton = new JButton("RESET");
     private final JButton stepButton = new JButton("STEP");
     private final JButton runButton = new JButton("RUN");
@@ -65,9 +69,85 @@ public class SimulatorUI extends JFrame {
             0xFF          // HALT              (Termination)
     };
 
+    // Queue demo: enqueue 0xAA, 0xBB, 0xCC, dequeue two, enqueue 0xDD,
+    // dequeue remaining — proves FIFO order and interleaved operations.
+    // Dequeued values saved at RAM[0x50]-RAM[0x53] for verification.
+    private static final int[] QUEUE_DEMO_PROGRAM = {
+            // --- Initialize queue metadata ---
+            0x74, 0x00,   // MOV A,#00
+            0xF5, 0x30,   // MOV 30h,A         head = 0
+            0xF5, 0x31,   // MOV 31h,A         tail = 0
+            0xF5, 0x32,   // MOV 32h,A         count = 0
+
+            // --- Enqueue 0xAA ---
+            0x74, 0xAA,   // MOV A,#AA
+            0xF5, 0x40,   // MOV 40h,A         buffer[0] = 0xAA
+            0x74, 0x01,   // MOV A,#01
+            0xF5, 0x31,   // MOV 31h,A         tail = 1
+            0xF5, 0x32,   // MOV 32h,A         count = 1
+
+            // --- Enqueue 0xBB ---
+            0x74, 0xBB,   // MOV A,#BB
+            0xF5, 0x41,   // MOV 41h,A         buffer[1] = 0xBB
+            0x74, 0x02,   // MOV A,#02
+            0xF5, 0x31,   // MOV 31h,A         tail = 2
+            0xF5, 0x32,   // MOV 32h,A         count = 2
+
+            // --- Enqueue 0xCC ---
+            0x74, 0xCC,   // MOV A,#CC
+            0xF5, 0x42,   // MOV 42h,A         buffer[2] = 0xCC
+            0x74, 0x03,   // MOV A,#03
+            0xF5, 0x31,   // MOV 31h,A         tail = 3
+            0xF5, 0x32,   // MOV 32h,A         count = 3
+
+            // --- Dequeue #1 (expect 0xAA — FIFO) ---
+            0xE5, 0x40,   // MOV A,40h         A = buffer[0] = 0xAA
+            0xF5, 0x50,   // MOV 50h,A         save result
+            0x74, 0x01,   // MOV A,#01
+            0xF5, 0x30,   // MOV 30h,A         head = 1
+            0x74, 0x02,   // MOV A,#02
+            0xF5, 0x32,   // MOV 32h,A         count = 2
+
+            // --- Dequeue #2 (expect 0xBB) ---
+            0xE5, 0x41,   // MOV A,41h         A = buffer[1] = 0xBB
+            0xF5, 0x51,   // MOV 51h,A         save result
+            0x74, 0x02,   // MOV A,#02
+            0xF5, 0x30,   // MOV 30h,A         head = 2
+            0x74, 0x01,   // MOV A,#01
+            0xF5, 0x32,   // MOV 32h,A         count = 1
+
+            // --- Enqueue 0xDD (interleaved) ---
+            0x74, 0xDD,   // MOV A,#DD
+            0xF5, 0x43,   // MOV 43h,A         buffer[3] = 0xDD
+            0x74, 0x04,   // MOV A,#04
+            0xF5, 0x31,   // MOV 31h,A         tail = 4
+            0x74, 0x02,   // MOV A,#02
+            0xF5, 0x32,   // MOV 32h,A         count = 2
+
+            // --- Dequeue #3 (expect 0xCC) ---
+            0xE5, 0x42,   // MOV A,42h         A = buffer[2] = 0xCC
+            0xF5, 0x52,   // MOV 52h,A         save result
+            0x74, 0x03,   // MOV A,#03
+            0xF5, 0x30,   // MOV 30h,A         head = 3
+            0x74, 0x01,   // MOV A,#01
+            0xF5, 0x32,   // MOV 32h,A         count = 1
+
+            // --- Dequeue #4 (expect 0xDD) ---
+            0xE5, 0x43,   // MOV A,43h         A = buffer[3] = 0xDD
+            0xF5, 0x53,   // MOV 53h,A         save result
+            0x74, 0x04,   // MOV A,#04
+            0xF5, 0x30,   // MOV 30h,A         head = 4
+            0x74, 0x00,   // MOV A,#00
+            0xF5, 0x32,   // MOV 32h,A         count = 0 (empty!)
+
+            // --- HALT ---
+            0xFF
+    };
+
     private SimulatorUI() {
         super("MS51FB9AE Microcontroller Simulator");
         cpu = new CPU();
+        queue = new Queue(cpu.getMemory());
         buildUI();
         loadDemoProgram();
         refreshCPUState();
@@ -82,8 +162,8 @@ public class SimulatorUI extends JFrame {
 
     private void buildUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1280, 820);
-        setMinimumSize(new Dimension(1000, 700));
+        setSize(1400, 900);
+        setMinimumSize(new Dimension(1100, 750));
         setLocationRelativeTo(null);
 
         JPanel root = new JPanel(new BorderLayout(10, 10));
@@ -94,18 +174,26 @@ public class SimulatorUI extends JFrame {
         title.setFont(new Font("SansSerif", Font.BOLD, 22));
         root.add(title, BorderLayout.NORTH);
 
-        // Right side: registers on top, data memory below
+        // Right side: registers on top, data memory and queue below
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
         rightPanel.add(createCPUStatePanel(), BorderLayout.NORTH);
-        rightPanel.add(createDataMemoryPanel(), BorderLayout.CENTER);
+
+        JSplitPane memoryQueueSplit = new JSplitPane(
+                JSplitPane.VERTICAL_SPLIT,
+                createDataMemoryPanel(),
+                createQueuePanel()
+        );
+        memoryQueueSplit.setResizeWeight(0.5);
+        rightPanel.add(memoryQueueSplit, BorderLayout.CENTER);
 
         JSplitPane center = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createProgramPanel(), rightPanel);
-        center.setResizeWeight(0.50);
+        center.setResizeWeight(0.45);
         root.add(center, BorderLayout.CENTER);
 
         root.add(createBottomPanel(), BorderLayout.SOUTH);
 
         loadButton.addActionListener(e -> loadDemoProgram());
+        queueDemoButton.addActionListener(e -> loadQueueDemoProgram());
         resetButton.addActionListener(e -> resetCPU());
         stepButton.addActionListener(e -> stepCPU());
         runButton.addActionListener(e -> runCPU());
@@ -157,11 +245,23 @@ public class SimulatorUI extends JFrame {
         return panel;
     }
 
+    private JPanel createQueuePanel() {
+        JPanel panel = titledPanel("QUEUE (FIFO)");
+        queueArea.setEditable(false);
+        queueArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        queueArea.setMargin(new Insets(6, 6, 6, 6));
+        JScrollPane scroll = new JScrollPane(queueArea);
+        scroll.setPreferredSize(new Dimension(380, 180));
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
+    }
+
     private JPanel createBottomPanel() {
         JPanel bottom = new JPanel(new BorderLayout(8, 8));
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT));
         controls.add(loadButton);
+        controls.add(queueDemoButton);
         controls.add(resetButton);
         controls.add(stepButton);
         controls.add(runButton);
@@ -205,6 +305,16 @@ public class SimulatorUI extends JFrame {
         loadedFile = null;
         traceArea.setText("Demo program loaded (14 instructions including RAM access). Press STEP or RUN.\n");
         statusLabel.setText("Status: READY (DEMO PROGRAM)");
+        refreshProgramDisplay();
+        refreshCPUState();
+    }
+
+    private void loadQueueDemoProgram() {
+        cpu.getMemory().loadProgram(QUEUE_DEMO_PROGRAM);
+        cpu.reset();
+        loadedFile = null;
+        traceArea.setText("Queue demo loaded — enqueue AA,BB,CC, dequeue, enqueue DD, dequeue. Press STEP or RUN.\n");
+        statusLabel.setText("Status: READY (QUEUE DEMO)");
         refreshProgramDisplay();
         refreshCPUState();
         setControlsEnabled(true);
@@ -431,6 +541,7 @@ public class SimulatorUI extends JFrame {
         acLabel.setText(r.isAuxiliaryCarry() ? "1" : "0");
         ovLabel.setText(r.isOverflow() ? "1" : "0");
         refreshDataMemoryPanel();
+        refreshQueuePanel();
     }
 
     private void refreshDataMemoryPanel() {
@@ -448,6 +559,60 @@ public class SimulatorUI extends JFrame {
         }
         dataMemoryArea.setText(sb.toString());
         dataMemoryArea.setCaretPosition(0);
+    }
+
+    private void refreshQueuePanel() {
+        StringBuilder sb = new StringBuilder();
+
+        int head = queue.getHead();
+        int tail = queue.getTail();
+        int count = queue.getCount();
+        int capacity = queue.getCapacity();
+
+        sb.append(String.format("HEAD: %02X   TAIL: %02X   COUNT: %d / %d\n", head, tail, count, capacity));
+
+        // Status line
+        String status;
+        if (count == 0) {
+            status = "EMPTY";
+        } else if (count >= capacity) {
+            status = "FULL";
+        } else {
+            status = count + " item" + (count != 1 ? "s" : "");
+        }
+        sb.append("Status: ").append(status).append("\n\n");
+
+        // FIFO contents
+        sb.append("Queue Contents (FIFO order):\n");
+        if (count == 0) {
+            sb.append("  (empty)\n");
+        } else {
+            int[] contents = queue.getContentsInOrder();
+            sb.append("  ");
+            for (int i = 0; i < contents.length; i++) {
+                if (i > 0) sb.append(" \u2192 ");
+                sb.append(String.format("%02X", contents[i]));
+            }
+            sb.append("\n");
+        }
+
+        // Raw buffer view
+        sb.append("\nBuffer [0x40\u20130x47]:\n");
+        for (int i = 0; i < capacity; i++) {
+            sb.append(String.format("  [%d]=%02X", i, queue.getBufferElement(i)));
+            if (i == head && i == tail) {
+                sb.append(" \u25C0H,T");
+            } else if (i == head % capacity && count > 0) {
+                sb.append(" \u25C0H");
+            } else if (i == tail % capacity) {
+                sb.append(" \u25C0T");
+            }
+            if (i == 3) sb.append("\n");
+        }
+        sb.append("\n");
+
+        queueArea.setText(sb.toString());
+        queueArea.setCaretPosition(0);
     }
 
     private void refreshProgramDisplay() {
