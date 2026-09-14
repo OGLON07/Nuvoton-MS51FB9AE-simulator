@@ -20,7 +20,7 @@ public class CPU {
     public CPU() {
         registers = new Registers();
         memory = new Memory();
-        instructionExecutor = new InstructionExecutor(registers);
+        instructionExecutor = new InstructionExecutor(registers, memory);
         halted = false;
     }
 
@@ -231,6 +231,40 @@ public class CPU {
                         );
 
                 break;
+
+            // MOV A,addr (opcode 0xE5)
+            case 0xE5: {
+
+                int addr =
+                        memory.readProgram(registers.getPC());
+
+                registers.setPC(registers.getPC() + 1);
+
+                decodedInstruction =
+                        new Instruction(
+                                Opcode.MOV_A_ADDR,
+                                addr
+                        );
+
+                break;
+            }
+
+            // MOV addr,A (opcode 0xF5)
+            case 0xF5: {
+
+                int addr =
+                        memory.readProgram(registers.getPC());
+
+                registers.setPC(registers.getPC() + 1);
+
+                decodedInstruction =
+                        new Instruction(
+                                Opcode.MOV_ADDR_A,
+                                addr
+                        );
+
+                break;
+            }
 
             default:
 

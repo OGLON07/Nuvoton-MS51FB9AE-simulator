@@ -13,6 +13,28 @@ public class InstructionSet {
         );
     }
 
+    // MOV A,addr — load accumulator from RAM
+    public static Instruction movADirect(int address) {
+
+        checkByte(address);
+
+        return new Instruction(
+                Opcode.MOV_A_ADDR,
+                address
+        );
+    }
+
+    // MOV addr,A — store accumulator into RAM
+    public static Instruction movDirectA(int address) {
+
+        checkByte(address);
+
+        return new Instruction(
+                Opcode.MOV_ADDR_A,
+                address
+        );
+    }
+
     // MOV Rn,#data
     public static Instruction movRImmediate(int registerIndex, int value) {
 

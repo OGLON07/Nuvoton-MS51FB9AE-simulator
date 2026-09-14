@@ -1,0 +1,49 @@
+# Week-03 Status — Data Memory (RAM) Integration
+
+## Summary
+
+Implemented direct-addressing instructions `MOV A,addr` and `MOV addr,A` to enable programs to read from and write to the 256-byte Data Memory (RAM).
+
+## Memory Design
+
+The MS51FB9AE simulator has two memory areas, both implemented as `int[]` (unsigned 8-bit values stored in Java ints):
+
+| Area            | Purpose              | Size    | Access          |
+| --------------- | -------------------- | ------- | --------------- |
+| Program Memory  | Instruction storage   | 16 KB   | Read-only (ROM) |
+| Data Memory     | Runtime data storage  | 256 B   | Read/Write (RAM)|
+
+- **`readData(addr)`** returns the byte at RAM[addr]
+- **`writeData(addr, value)`** stores `value & 0xFF` at RAM[addr]
+- **`clearDataMemory()`** zeros all 256 bytes (used by CPU `reset()`)
+- Address validation throws `IllegalArgumentException` for addresses outside 0–255
+
+## New Instructions
+
+| Mnemonic      | Opcode | Bytes | Operation               |
+| ------------- | ------ | ----- | ----------------------- |
+| `MOV A,addr`  | 0xE5   | 2     | A ← RAM[addr]           |
+| `MOV addr,A`  | 0xF5   | 2     | RAM[addr] ← A           |
+
+These match the real 8051 instruction set direct-addressing opcodes.
+
+## Files Modified
+
+- `src/Main/instruction/Opcode.java` — added `MOV_A_ADDR`, `MOV_ADDR_A`
+- `src/Main/instruction/InstructionSet.java` — added `movADirect()`, `movDirectA()`
+- `src/Main/instruction/InstructionExecutor.java` — added `Memory` field + execute cases
+- `src/Main/CPU/CPU.java` — updated constructor, added decode cases for 0xE5 and 0xF5
+- `src/Main/UI/SimulatorUI.java` — added DATA MEMORY (RAM) hex grid panel, disassembly & instruction length support for 0xE5 / 0xF5
+
+## Test Results
+
+6 / 6 tests passed. See `tests/test-2.md` for the full results table.
+
+| Test | Description                          | Status |
+| ---- | ------------------------------------ | ------ |
+| TC01 | Write to RAM and read back           | PASS   |
+| TC02 | Boundary address 0x00                | PASS   |
+| TC03 | Boundary address 0xFF                | PASS   |
+| TC04 | Out-of-range read (addr 256)         | PASS   |
+| TC05 | Out-of-range write (addr -1)         | PASS   |
+| TC06 | CPU reset clears RAM                 | PASS   |

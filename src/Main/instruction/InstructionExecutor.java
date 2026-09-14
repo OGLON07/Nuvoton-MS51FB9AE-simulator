@@ -1,14 +1,16 @@
 package Main.instruction;
 
 import Main.CPU.Registers;
+import Main.Memory.Memory;
 
 public class InstructionExecutor {
 
     private final Registers registers;
+    private final Memory memory;
 
     // ---------- Constructor ----------
 
-    public InstructionExecutor(Registers registers) {
+    public InstructionExecutor(Registers registers, Memory memory) {
 
         if (registers == null) {
             throw new IllegalArgumentException(
@@ -16,7 +18,14 @@ public class InstructionExecutor {
             );
         }
 
+        if (memory == null) {
+            throw new IllegalArgumentException(
+                    "Memory cannot be null"
+            );
+        }
+
         this.registers = registers;
+        this.memory = memory;
     }
 
     // ---------- EXECUTE ----------
@@ -50,6 +59,27 @@ public class InstructionExecutor {
                 registers.setR(
                         instruction.getRegisterIndex(),
                         instruction.getOperand()
+                );
+
+                break;
+
+            // MOV A,addr — read RAM[addr] into A
+            case MOV_A_ADDR:
+
+                registers.setAccumulator(
+                        memory.readData(
+                                instruction.getOperand()
+                        )
+                );
+
+                break;
+
+            // MOV addr,A — write A into RAM[addr]
+            case MOV_ADDR_A:
+
+                memory.writeData(
+                        instruction.getOperand(),
+                        registers.getAccumulator()
                 );
 
                 break;

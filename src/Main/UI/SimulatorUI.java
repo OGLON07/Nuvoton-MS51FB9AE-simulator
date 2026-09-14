@@ -21,6 +21,7 @@ public class SimulatorUI extends JFrame {
 
     private final JTextPane programArea = new JTextPane();
     private final JTextArea traceArea = new JTextArea();
+    private final JTextArea dataMemoryArea = new JTextArea();
     private final JLabel statusLabel = new JLabel("Status: READY");
     private final JLabel currentInstructionLabel = new JLabel("Current instruction: —");
 
@@ -55,6 +56,10 @@ public class SimulatorUI extends JFrame {
             0x54, 0x0F,   // ANL A,#0F         (Logical)
             0x04,         // INC A             (Increment)
             0x14,         // DEC A             (Decrement)
+            0x74, 0x42,   // MOV A,#42         (Data Transfer)
+            0xF5, 0x30,   // MOV 30H,A         (Store A into RAM 0x30)
+            0x74, 0x00,   // MOV A,#00         (Clear A)
+            0xE5, 0x30,   // MOV A,30H         (Load A from RAM 0x30)
             0x80, 0x02,   // SJMP +2           (Control Flow - skips next instr)
             0x74, 0xFF,   // MOV A,#FF         (dead code - proves the jump worked)
             0xFF          // HALT              (Termination)
@@ -77,8 +82,8 @@ public class SimulatorUI extends JFrame {
 
     private void buildUI() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1100, 720);
-        setMinimumSize(new Dimension(900, 600));
+        setSize(1280, 820);
+        setMinimumSize(new Dimension(1000, 700));
         setLocationRelativeTo(null);
 
         JPanel root = new JPanel(new BorderLayout(10, 10));
@@ -89,8 +94,13 @@ public class SimulatorUI extends JFrame {
         title.setFont(new Font("SansSerif", Font.BOLD, 22));
         root.add(title, BorderLayout.NORTH);
 
-        JSplitPane center = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createProgramPanel(), createCPUStatePanel());
-        center.setResizeWeight(0.58);
+        // Right side: registers on top, data memory below
+        JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
+        rightPanel.add(createCPUStatePanel(), BorderLayout.NORTH);
+        rightPanel.add(createDataMemoryPanel(), BorderLayout.CENTER);
+
+        JSplitPane center = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createProgramPanel(), rightPanel);
+        center.setResizeWeight(0.50);
         root.add(center, BorderLayout.CENTER);
 
         root.add(createBottomPanel(), BorderLayout.SOUTH);
@@ -133,6 +143,17 @@ public class SimulatorUI extends JFrame {
         addStateRow(grid, "OV", ovLabel);
 
         panel.add(grid, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createDataMemoryPanel() {
+        JPanel panel = titledPanel("DATA MEMORY (RAM)");
+        dataMemoryArea.setEditable(false);
+        dataMemoryArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        dataMemoryArea.setMargin(new Insets(6, 6, 6, 6));
+        JScrollPane scroll = new JScrollPane(dataMemoryArea);
+        scroll.setPreferredSize(new Dimension(380, 220));
+        panel.add(scroll, BorderLayout.CENTER);
         return panel;
     }
 
@@ -182,9 +203,10 @@ public class SimulatorUI extends JFrame {
         cpu.getMemory().loadProgram(DEMO_PROGRAM);
         cpu.reset();
         loadedFile = null;
-        traceArea.setText("Demo program loaded (all 10 instructions). Press STEP or RUN.\n");
+        traceArea.setText("Demo program loaded (14 instructions including RAM access). Press STEP or RUN.\n");
         statusLabel.setText("Status: READY (DEMO PROGRAM)");
         refreshProgramDisplay();
+        refreshCPUState();
         setControlsEnabled(true);
     }
 
@@ -380,6 +402,8 @@ public class SimulatorUI extends JFrame {
         if (instruction == null) return "—";
         switch (instruction.getOpcode()) {
             case MOV_A_IMM: return "MOV A,#" + hex(instruction.getOperand());
+            case MOV_A_ADDR: return "MOV A," + hex(instruction.getOperand());
+            case MOV_ADDR_A: return "MOV " + hex(instruction.getOperand()) + ",A";
             case MOV_RN_IMM: return "MOV R" + instruction.getRegisterIndex() + ",#" + hex(instruction.getOperand());
             case ADD_A_IMM: return "ADD A,#" + hex(instruction.getOperand());
             case SUBB_A_IMM: return "SUBB A,#" + hex(instruction.getOperand());
@@ -406,6 +430,24 @@ public class SimulatorUI extends JFrame {
         cyLabel.setText(r.isCarry() ? "1" : "0");
         acLabel.setText(r.isAuxiliaryCarry() ? "1" : "0");
         ovLabel.setText(r.isOverflow() ? "1" : "0");
+        refreshDataMemoryPanel();
+    }
+
+    private void refreshDataMemoryPanel() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ADDR  00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F\n");
+        sb.append("-------------------------------------------------------\n");
+        Memory mem = cpu.getMemory();
+        for (int row = 0; row < Memory.RAM_SIZE; row += 16) {
+            sb.append(String.format("0x%02X  ", row));
+            for (int col = 0; col < 16; col++) {
+                sb.append(String.format("%02X ", mem.readData(row + col)));
+                if (col == 7) sb.append(" ");
+            }
+            sb.append("\n");
+        }
+        dataMemoryArea.setText(sb.toString());
+        dataMemoryArea.setCaretPosition(0);
     }
 
     private void refreshProgramDisplay() {
@@ -462,7 +504,9 @@ public class SimulatorUI extends JFrame {
     }
 
     private int instructionLength(int opcode) {
-        if (opcode == 0x74 || opcode == 0x24 || opcode == 0x94 || opcode == 0x54 || opcode == 0x80 || (opcode >= 0x78 && opcode <= 0x7F)) return 2;
+        if (opcode == 0x74 || opcode == 0x24 || opcode == 0x94 || opcode == 0x54
+                || opcode == 0x80 || (opcode >= 0x78 && opcode <= 0x7F)
+                || opcode == 0xE5 || opcode == 0xF5) return 2;
         return 1;
     }
 
@@ -470,6 +514,8 @@ public class SimulatorUI extends JFrame {
         int operand = address + 1 < memory.getProgramSize() ? memory.readProgram(address + 1) : 0;
         switch (opcode) {
             case 0x74: return "MOV A,#" + hex(operand);
+            case 0xE5: return "MOV A," + hex(operand);
+            case 0xF5: return "MOV " + hex(operand) + ",A";
             case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E: case 0x7F:
                 return "MOV R" + (opcode - 0x78) + ",#" + hex(operand);
             case 0x24: return "ADD A,#" + hex(operand);
