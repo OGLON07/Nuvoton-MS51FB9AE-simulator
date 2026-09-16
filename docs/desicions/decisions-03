@@ -1,0 +1,69 @@
+Completed Work
+Implemented 256-byte data memory and 16 KB program memory.
+Implemented basic program-memory and data-memory read/write operations.
+Added MOV A,addr for reading data from RAM into the accumulator.
+Added MOV addr,A for writing the accumulator value into RAM.
+Integrated the memory instructions into the CPU decode and execution process.
+Added Data Memory display to the simulator UI.
+Implemented stack operations using the CPU's SP register.
+Added PUSH A and POP A instructions.
+Implemented stack storage using Data Memory.
+Added 8-bit Stack Pointer wrap-around behavior.
+Added a Stack View showing SP and stack memory contents.
+Added a Stack Demo program.
+Implemented a fixed-size circular FIFO queue using Data Memory.
+Defined dedicated RAM locations for queue metadata and buffer storage.
+Implemented HEAD, TAIL, and COUNT tracking.
+Implemented empty and full queue conditions.
+Implemented circular buffer wrap-around.
+Added Queue UI showing HEAD, TAIL, COUNT, capacity, status, and FIFO contents.
+Created the required queue flowcharts.
+Created an Assembly validation program demonstrating multiple enqueue and dequeue operations and FIFO ordering.
+  
+Work Tested
+Tested writing a value to a data-memory address and reading the value back.
+Tested valid memory address boundaries.
+Tested PUSH A followed by POP A to verify that the original value is recovered.
+Tested multiple PUSH operations.
+Tested Stack Pointer (SP) updates during PUSH and POP operations.
+Tested multiple enqueue operations.
+Tested multiple dequeue operations.
+Tested FIFO ordering.
+Tested the Data Memory display.
+Tested the Stack display and SP visibility.  
+  
+Work Accepted
+Memory read/write functionality integrated with the simulator.
+Stack PUSH/POP functionality integrated with the CPU and data memory.
+FIFO Queue functionality implemented and integrated with the simulator.
+Required Queue flowchart completed.
+Processor-specific Assembly validation program completed and executed.
+Memory, Stack, and Queue information displayed through the simulator UI.
+Week 3 functionality accepted as the baseline for the next stage of development.
+
+Work Not Completed
+Extended testing for additional edge cases beyond the required Week 3 functionality.
+Further refinement of the UI layout and presentation.
+Additional optimization and code cleanup across the integrated modules.
+Expansion of Memory, Stack, and Queue functionality beyond the current Week 3 requirements.
+
+Issues
+Integrating the Memory, Stack, and Queue components required coordination because all three components use the shared data-memory space.
+Changes to CPU and UI components had to be coordinated between team members to avoid conflicts during integration.
+Stack and Queue operations require careful management of their allocated RAM regions to prevent data overlap.
+Additional validation was required to ensure that queue pointer updates and circular wrap-around behaved correctly.
+  
+Concerns
+Future additions to the simulator will increase the amount of shared CPU, memory, and UI code that needs to be maintained.
+The fixed-size queue limits the number of elements that can be stored at one time.
+Increasing the instruction set may require additional changes to opcode decoding, execution logic, testing, and UI representation.
+As more simulator components are integrated, maintaining clear separation between modules will become increasingly important.
+
+Work carrying forward to week 4
+Improve the overall UI presentation and organization.
+Improve visibility of CPU, memory, stack, and queue state during execution.
+Add additional edge-case and integration tests.
+Perform further code cleanup and refactoring after integration.
+Expand the simulator functionality according to the Week 4 requirements.
+Continue integrating the existing CPU, Memory, Stack, and Queue components with the next layer of simulator functionality.
+  

@@ -3,6 +3,8 @@ package Main.instruction;
 public enum Opcode {
 
     MOV_A_IMM(0x74),
+    MOV_A_ADDR(0xE5),
+    MOV_ADDR_A(0xF5),
     MOV_RN_IMM(0x78),
 
     ADD_A_IMM(0x24),
@@ -16,6 +18,9 @@ public enum Opcode {
     ANL_A_IMM(0x54),
 
     SJMP(0x80),
+
+    PUSH_A(0xC0),
+    POP_A(0xD0),
 
     HALT(0xFF);
 

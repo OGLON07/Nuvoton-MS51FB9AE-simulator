@@ -1,0 +1,98 @@
+ Weekly Status Update - Week 3
+
+
+ Planned Work
+Implement data memory read/write functionality.
+Add memory-related instructions to the CPU.
+Add a Data Memory display to the UI.
+Implement stack operations using the Stack Pointer and data memory.
+Add PUSH and POP instructions.
+Add a Stack View to the UI.
+Implement a fixed-size FIFO queue using data memory.
+Add queue status and contents to the UI.
+Create the required queue flowcharts.
+Create and execute an Assembly validation program for FIFO behavior.
+Write and execute test cases for Memory, Stack, and Queue.
+
+
+Completed Work
+Implemented 256-byte data memory and 16 KB program memory.
+Added memory read/write operations.
+Added MOV A,addr and MOV addr,A instructions.
+Integrated memory instructions with CPU decode and execution.
+Added a Data Memory panel to the UI.
+Implemented stack operations using the SP register.
+Added PUSH A and POP A instructions.
+Implemented stack storage using data memory.
+Added 8-bit Stack Pointer wrap-around behavior.
+Added a Stack View displaying SP and stack contents.
+Added a Stack Demo program.
+Implemented a fixed-size circular FIFO queue using data memory.
+Added HEAD, TAIL, and COUNT queue tracking.
+Implemented queue empty/full conditions and circular wrap-around.
+Added a Queue panel displaying queue status and contents.
+Created the required queue flowcharts.
+Created an Assembly validation program demonstrating multiple enqueue/dequeue operations and FIFO ordering.
+Added Memory, Stack, and Queue test cases.
+
+Pending Work
+Complete and organize the final Week 3 test results and execution records.
+Further improve the presentation of CPU, Memory, Stack, and Queue information in the UI.
+Perform additional edge-case and integration testing.
+Review and clean up the Week 3 implementation and documentation.
+
+Issues Encountered
+Memory, Stack, and Queue components share the same data-memory space, so their RAM address ranges had to be kept separate.
+Several Week 3 features required changes to shared CPU and UI files, requiring coordination between team members.
+Queue pointer updates and circular wrap-around required additional testing to ensure correct FIFO behavior.
+The increasing number of CPU instructions required corresponding updates to instruction decoding and execution.
+
+Decisions Made
+Use separate RAM regions for Stack and Queue storage to prevent conflicts.
+Use the existing data memory for both Stack and Queue storage.
+Implement the Queue as a fixed-size circular FIFO buffer.
+Use HEAD, TAIL, and COUNT values to track queue state.
+Keep queue operations based on existing instructions rather than introducing additional queue-specific opcodes.
+Continue using the existing CPU Fetch → Decode → Execute structure.
+
+Individual Contributions:
+Gilon Prince Serrao:
+Implemented the FIFO Queue using data memory.
+Added queue metadata and circular buffer handling.
+Created the required Queue flowcharts.
+Created and executed the Assembly FIFO validation program.
+Added the Queue UI panel and Queue test cases.
+
+Asad Moidhin: 
+Implemented data memory read/write functionality.
+Added memory instructions to the CPU.
+Added and updated the Data Memory UI panel.
+Created Memory test cases and documentation.
+
+Preemal Simona Pinto: 
+Implemented Stack operations using the SP register.
+Added PUSH and POP instructions.
+Added the Stack View and Stack Demo.
+Created Stack test cases and documentation.
+
+Work Accepted
+Memory, Stack, and FIFO Queue functionality has been implemented and integrated into the simulator.
+Memory and Stack operations are accessible through the CPU instruction execution process.
+Queue functionality demonstrates FIFO behavior using the simulator's data memory.
+The required Queue flowcharts and Assembly validation program have been completed.
+Week 3 functionality has been tested through Memory, Stack, Queue, and integration test cases.
+
+
+Work Carried Forward:
+Additional edge-case and integration testing.
+Further UI improvements for CPU, Memory, Stack, and Queue visibility.
+Code cleanup and refactoring where required.
+Additional documentation based on testing and execution results.
+Integration of the completed Week 3 components with the next week's requirements.
+
+Week 4 Plan:
+Review the complete Week 3 implementation and resolve remaining issues.
+Improve the simulator UI and execution visibility.
+Perform additional integration and edge-case testing.
+Refine documentation and test results.
+Begin implementation of the Week 4 requirements.
