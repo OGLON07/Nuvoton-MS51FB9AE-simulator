@@ -8,307 +8,89 @@ public class InstructionExecutor {
     private final Registers registers;
     private final Memory memory;
 
-    // ---------- Constructor ----------
-
     public InstructionExecutor(Registers registers, Memory memory) {
-
-        if (registers == null) {
-            throw new IllegalArgumentException(
-                    "Registers cannot be null"
-            );
-        }
-
-        if (memory == null) {
-            throw new IllegalArgumentException(
-                    "Memory cannot be null"
-            );
-        }
-
         this.registers = registers;
         this.memory = memory;
     }
 
-    // ---------- EXECUTE ----------
-
     public void execute(Instruction instruction) {
-
-        if (instruction == null) {
-            throw new IllegalArgumentException(
-                    "Instruction cannot be null"
-            );
-        }
-
         switch (instruction.getOpcode()) {
 
-            // -------------------------
-            // DATA TRANSFER
-            // -------------------------
+            case PUSH_A: {
+                // 1. Pre-increment SP (0x07 -> 0x08)
+                int newSP = (registers.getSP() + 1) & 0xFF;
+                
+                // 2. MUST save new SP back into registers
+                registers.setSP(newSP);
+                
+                // 3. Write ACC value into RAM at location [newSP]
+                memory.writeData(newSP, registers.getAccumulator());
+                break;
+            }
 
-            // MOV A,#data
+            case POP_A: {
+                int currentSP = registers.getSP();
+                
+                // 1. Read byte at RAM[currentSP] into ACC
+                registers.setAccumulator(memory.readData(currentSP));
+                
+                // 2. Post-decrement SP (0x08 -> 0x07) and save back
+                registers.setSP((currentSP - 1) & 0xFF);
+                break;
+            }
+
             case MOV_A_IMM:
-
-                registers.setAccumulator(
-                        instruction.getOperand()
-                );
-
+                registers.setAccumulator(instruction.getOperand() & 0xFF);
                 break;
 
-            // MOV Rn,#data
             case MOV_RN_IMM:
-
-                registers.setR(
-                        instruction.getRegisterIndex(),
-                        instruction.getOperand()
-                );
-
+                registers.setR(instruction.getRegisterIndex(), instruction.getOperand() & 0xFF);
                 break;
 
-            // MOV A,addr — read RAM[addr] into A
-            case MOV_A_ADDR:
-
-                registers.setAccumulator(
-                        memory.readData(
-                                instruction.getOperand()
-                        )
-                );
-
+            case ADD_A_IMM:
+                registers.setAccumulator((registers.getAccumulator() + instruction.getOperand()) & 0xFF);
                 break;
 
-            // MOV addr,A — write A into RAM[addr]
-            case MOV_ADDR_A:
-
-                memory.writeData(
-                        instruction.getOperand(),
-                        registers.getAccumulator()
-                );
-
+            case SUBB_A_IMM:
+                registers.setAccumulator((registers.getAccumulator() - instruction.getOperand()) & 0xFF);
                 break;
 
-
-            // -------------------------
-            // ARITHMETIC
-            // -------------------------
-
-            // ADD A,#data
-            case ADD_A_IMM: {
-
-                int a =
-                        registers.getAccumulator();
-
-                int operand =
-                        instruction.getOperand();
-
-                int result =
-                        a + operand;
-
-                int result8 =
-                        result & 0xFF;
-
-                // Store 8-bit result
-                registers.setAccumulator(result8);
-
-                // Carry
-                registers.setCarry(
-                        result > 0xFF
-                );
-
-                // Auxiliary Carry
-                registers.setAuxiliaryCarry(
-                        ((a & 0x0F) +
-                         (operand & 0x0F)) > 0x0F
-                );
-
-                // Signed overflow
-                boolean overflow =
-                        ((~(a ^ operand))
-                        & (a ^ result8)
-                        & 0x80) != 0;
-
-                registers.setOverflow(overflow);
-
-                break;
-            }
-
-
-            // SUBB A,#data
-            case SUBB_A_IMM: {
-
-                int a =
-                        registers.getAccumulator();
-
-                int operand =
-                        instruction.getOperand();
-
-                // SUBB includes the current carry
-                int carryIn =
-                        registers.isCarry() ? 1 : 0;
-
-                int result =
-                        a - operand - carryIn;
-
-                int result8 =
-                        result & 0xFF;
-
-                // Store result
-                registers.setAccumulator(result8);
-
-                // Borrow sets Carry
-                registers.setCarry(
-                        result < 0
-                );
-
-                // Auxiliary borrow
-                registers.setAuxiliaryCarry(
-                        ((a & 0x0F)
-                        - (operand & 0x0F)
-                        - carryIn) < 0
-                );
-
-                // Signed overflow
-                boolean overflow =
-                        ((a ^ operand)
-                        & (a ^ result8)
-                        & 0x80) != 0;
-
-                registers.setOverflow(overflow);
-
-                break;
-            }
-
-
-            // MUL AB
             case MUL_AB: {
-
-                int a =
-                        registers.getAccumulator();
-
-                int b =
-                        registers.getB();
-
-                int result =
-                        a * b;
-
-                // Lower 8 bits -> A
-                registers.setAccumulator(
-                        result & 0xFF
-                );
-
-                // Upper 8 bits -> B
-                registers.setB(
-                        (result >> 8) & 0xFF
-                );
-
-                // MUL clears Carry
-                registers.setCarry(false);
-
-                // Overflow if result needs more than 8 bits
-                registers.setOverflow(
-                        result > 0xFF
-                );
-
+                int result = registers.getAccumulator() * registers.getB();
+                registers.setAccumulator(result & 0xFF);        // Low byte
+                registers.setB((result >> 8) & 0xFF);           // High byte
                 break;
             }
 
-
-            // -------------------------
-            // LOGICAL
-            // -------------------------
-
-            // ANL A,#data
-            case ANL_A_IMM: {
-
-                int a =
-                        registers.getAccumulator();
-
-                int operand =
-                        instruction.getOperand();
-
-                registers.setAccumulator(
-                        a & operand
-                );
-
+            case ANL_A_IMM:
+                registers.setAccumulator(registers.getAccumulator() & instruction.getOperand());
                 break;
-            }
 
-
-            // -------------------------
-            // INCREMENT / DECREMENT
-            // -------------------------
-
-            // INC A
-            case INC_A: {
-
-                int a =
-                        registers.getAccumulator();
-
-                registers.setAccumulator(
-                        a + 1
-                );
-
+            case INC_A:
+                registers.setAccumulator((registers.getAccumulator() + 1) & 0xFF);
                 break;
-            }
 
-
-            // DEC A
-            case DEC_A: {
-
-                int a =
-                        registers.getAccumulator();
-
-                registers.setAccumulator(
-                        a - 1
-                );
-
+            case DEC_A:
+                registers.setAccumulator((registers.getAccumulator() - 1) & 0xFF);
                 break;
-            }
 
-
-            // -------------------------
-            // CONTROL FLOW
-            // -------------------------
-
-            // SJMP rel
             case SJMP:
-
-                /*
-                 * At this point PC already points
-                 * to the next instruction.
-                 *
-                 * Therefore:
-                 *
-                 * new PC = current PC + offset
-                 */
-                int pc =
-                        registers.getPC();
-
-                int offset =
-                        instruction.getOperand();
-
-                registers.setPC(
-                        pc + offset
-                );
-
+                registers.setPC((registers.getPC() + instruction.getOperand()) & 0xFFFF);
                 break;
 
+            case MOV_A_ADDR:
+                registers.setAccumulator(memory.readData(instruction.getOperand()));
+                break;
 
-            // -------------------------
-            // TERMINATION
-            // -------------------------
+            case MOV_ADDR_A:
+                memory.writeData(instruction.getOperand(), registers.getAccumulator());
+                break;
 
-            // HALT
             case HALT:
-
-                // CPU handles the halted state.
-                // No register operation is needed here.
                 break;
-
 
             default:
-
-                throw new UnsupportedOperationException(
-                        "Instruction not implemented: "
-                                + instruction.getOpcode()
-                );
+                throw new UnsupportedOperationException("Unhandled opcode: " + instruction.getOpcode());
         }
     }
 }

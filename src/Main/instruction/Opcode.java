@@ -19,6 +19,9 @@ public enum Opcode {
 
     SJMP(0x80),
 
+    PUSH_A(0xC0),
+    POP_A(0xD0),
+
     HALT(0xFF);
 
     private final int code;

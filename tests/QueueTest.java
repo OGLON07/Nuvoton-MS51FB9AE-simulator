@@ -87,7 +87,6 @@ public class QueueTest {
     // -------------------------------------------------------
     private static void testMultipleEnqueueFifoOrder() {
         CPU cpu = new CPU();
-        Queue queue = new Queue(cpu.getMemory());
 
         cpu.getMemory().loadProgram(new int[]{
                 // Init

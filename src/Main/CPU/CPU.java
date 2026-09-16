@@ -33,6 +33,7 @@ public class CPU {
     public Memory getMemory() {
         return memory;
     }
+
     public int getFetchedOpcode() {
         return fetchedOpcode;
     }
@@ -44,13 +45,8 @@ public class CPU {
     // ---------- FETCH ----------
 
     public int fetch() {
-
         int pc = registers.getPC();
-
-        // Read instruction byte from program memory
         fetchedOpcode = memory.readProgram(pc);
-
-        // Move PC to the next byte
         registers.setPC(pc + 1);
 
         System.out.println(
@@ -70,18 +66,9 @@ public class CPU {
 
             // MOV A,#data
             case 0x74: {
-
-                int operand =
-                        memory.readProgram(registers.getPC());
-
+                int operand = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.MOV_A_IMM,
-                                operand
-                        );
-
+                decodedInstruction = new Instruction(Opcode.MOV_A_IMM, operand);
                 break;
             }
 
@@ -94,204 +81,113 @@ public class CPU {
             case 0x7D:
             case 0x7E:
             case 0x7F: {
-
-                int registerIndex =
-                        fetchedOpcode - 0x78;
-
-                int operand =
-                        memory.readProgram(registers.getPC());
-
+                int registerIndex = fetchedOpcode - 0x78;
+                int operand = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.MOV_RN_IMM,
-                                registerIndex,
-                                operand
-                        );
-
+                decodedInstruction = new Instruction(Opcode.MOV_RN_IMM, registerIndex, operand);
                 break;
             }
 
             // ADD A,#data
             case 0x24: {
-
-                int operand =
-                        memory.readProgram(registers.getPC());
-
+                int operand = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.ADD_A_IMM,
-                                operand
-                        );
-
+                decodedInstruction = new Instruction(Opcode.ADD_A_IMM, operand);
                 break;
             }
 
             // SUBB A,#data
             case 0x94: {
-
-                int operand =
-                        memory.readProgram(registers.getPC());
-
+                int operand = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.SUBB_A_IMM,
-                                operand
-                        );
-
+                decodedInstruction = new Instruction(Opcode.SUBB_A_IMM, operand);
                 break;
             }
 
             // MUL AB
             case 0xA4:
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.MUL_AB,
-                                0
-                        );
-
+                decodedInstruction = new Instruction(Opcode.MUL_AB, 0);
                 break;
 
             // ANL A,#data
             case 0x54: {
-
-                int operand =
-                        memory.readProgram(registers.getPC());
-
+                int operand = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.ANL_A_IMM,
-                                operand
-                        );
-
+                decodedInstruction = new Instruction(Opcode.ANL_A_IMM, operand);
                 break;
             }
 
             // INC A
             case 0x04:
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.INC_A,
-                                0
-                        );
-
+                decodedInstruction = new Instruction(Opcode.INC_A, 0);
                 break;
 
             // DEC A
             case 0x14:
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.DEC_A,
-                                0
-                        );
-
+                decodedInstruction = new Instruction(Opcode.DEC_A, 0);
                 break;
 
             // SJMP rel
             case 0x80: {
-
-                int relativeOffset =
-                        memory.readProgram(registers.getPC());
-
+                int relativeOffset = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
 
-                // Convert unsigned 8-bit offset
-                // into signed range -128 to +127
                 if (relativeOffset >= 128) {
                     relativeOffset -= 256;
                 }
 
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.SJMP,
-                                relativeOffset
-                        );
-
+                decodedInstruction = new Instruction(Opcode.SJMP, relativeOffset);
                 break;
             }
+        
+            
+            case 0xC0:
+    decodedInstruction = new Instruction(Opcode.PUSH_A, 0);
+    break;
 
-            // HALT
-            // Simulator-defined termination instruction
-            case 0xFF:
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.HALT,
-                                0
-                        );
-
-                break;
-
-            // MOV A,addr (opcode 0xE5)
+case 0xD0:
+    decodedInstruction = new Instruction(Opcode.POP_A, 0);
+    break;
+    
+            // MOV A,addr
             case 0xE5: {
-
-                int addr =
-                        memory.readProgram(registers.getPC());
-
+                int addr = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.MOV_A_ADDR,
-                                addr
-                        );
-
+                decodedInstruction = new Instruction(Opcode.MOV_A_ADDR, addr);
                 break;
             }
 
-            // MOV addr,A (opcode 0xF5)
+            // MOV addr,A
             case 0xF5: {
-
-                int addr =
-                        memory.readProgram(registers.getPC());
-
+                int addr = memory.readProgram(registers.getPC());
                 registers.setPC(registers.getPC() + 1);
-
-                decodedInstruction =
-                        new Instruction(
-                                Opcode.MOV_ADDR_A,
-                                addr
-                        );
-
+                decodedInstruction = new Instruction(Opcode.MOV_ADDR_A, addr);
                 break;
             }
+
+           case 0x00: // NOP (No Operation)
+    registers.setPC(registers.getPC() + 1);
+    break;
+
+        case 0xFF: // HALT
+            this.halted = true;
+            this.decodedInstruction = new Instruction(Opcode.HALT, 0); // Stop CPU execution
+            // Do NOT increment PC so it stays at the HALT instruction address
+            break;
 
             default:
-
                 throw new UnsupportedOperationException(
-                        "Unknown opcode: 0x"
-                                + Integer.toHexString(fetchedOpcode)
-                                .toUpperCase()
+                        "Unknown opcode: 0x" + Integer.toHexString(fetchedOpcode).toUpperCase()
                 );
         }
 
-        System.out.println(
-                "DECODE: " +
-                decodedInstruction.getOpcode()
-        );
+        System.out.println("DECODE: " + decodedInstruction.getOpcode());
 
         if (decodedInstruction.getRegisterIndex() != -1) {
-
-            System.out.println(
-                    "       Register = R" +
-                    decodedInstruction.getRegisterIndex()
-            );
+            System.out.println("       Register = R" + decodedInstruction.getRegisterIndex());
         }
 
-        System.out.println(
-                "       Operand = " +
-                decodedInstruction.getOperand()
-        );
+        System.out.println("       Operand = " + decodedInstruction.getOperand());
 
         return decodedInstruction;
     }
@@ -299,11 +195,8 @@ public class CPU {
     // ---------- EXECUTE ----------
 
     public void execute(Instruction instruction) {
-
         if (instruction == null) {
-            throw new IllegalArgumentException(
-                    "Instruction cannot be null"
-            );
+            throw new IllegalArgumentException("Instruction cannot be null");
         }
 
         instructionExecutor.execute(instruction);
@@ -316,22 +209,18 @@ public class CPU {
     // ---------- STEP ----------
 
     public void step() {
-
         if (halted) {
             return;
         }
 
         fetch();
-
         Instruction instruction = decode();
-
         execute(instruction);
     }
 
     // ---------- RUN ----------
 
     public void run() {
-
         while (!halted) {
             step();
         }
@@ -340,11 +229,7 @@ public class CPU {
     // ---------- RESET ----------
 
     public void reset() {
-
         registers.reset();
-
-        // Reset CPU runtime state,
-        // but keep the loaded program in program memory.
         memory.clearDataMemory();
 
         fetchedOpcode = 0;

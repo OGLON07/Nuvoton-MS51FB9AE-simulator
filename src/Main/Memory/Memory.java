@@ -75,6 +75,20 @@ public class Memory {
     }
 
     /**
+     * Writes one byte into program memory at a specific address.
+     *
+     * @param address program memory address
+     * @param value 8-bit instruction byte
+     */
+    public void writeProgram(int address, int value) {
+        checkProgramAddress(address);
+        programMemory[address] = value & 0xFF;
+        if (address >= programSize) {
+            programSize = address + 1;
+        }
+    }
+
+    /**
      * Reads one byte from program memory.
      *
      * @param address program memory address
@@ -116,9 +130,6 @@ public class Memory {
     /**
      * Returns the number of bytes in the currently loaded program.
      *
-     * This will be useful for the CPU when checking
-     * whether the program has finished executing.
-     *
      * @return number of loaded program bytes
      */
     public int getProgramSize() {
@@ -127,9 +138,6 @@ public class Memory {
 
     /**
      * Clears only data memory (RAM).
-     *
-     * This is what the CPU should normally use during RESET,
-     * because the loaded program should remain in program memory.
      */
     public void clearDataMemory() {
 
@@ -152,9 +160,6 @@ public class Memory {
 
     /**
      * Completely resets both program memory and data memory.
-     *
-     * This should only be used when we intentionally want
-     * to remove the loaded program as well.
      */
     public void reset() {
 

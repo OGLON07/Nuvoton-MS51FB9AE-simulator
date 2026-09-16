@@ -1,6 +1,5 @@
 import Main.CPU.CPU;
 import Main.Memory.Memory;
-import Main.CPU.Registers;
 
 /**
  * Week-03 Data Memory Tests
