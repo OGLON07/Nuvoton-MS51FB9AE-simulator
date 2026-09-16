@@ -8,7 +8,7 @@ public class Registers {
     private int accumulator; 
     private int b;           
     private int pc;         
-    private int sp;         
+    private int sp = 0x07;         
     private int psw;       
 
     public int getR(int index) {
@@ -127,7 +127,7 @@ public void setOverflow(boolean value) {
         accumulator = 0;
         b = 0;
         pc = 0;
-        sp = 0;
+        sp = 0x07;
         psw = 0;
     }
 }

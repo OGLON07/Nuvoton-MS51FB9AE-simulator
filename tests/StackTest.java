@@ -7,6 +7,7 @@ public class StackTest {
 
         testSinglePushPop();
         testMultiplePushPopLIFO();
+        testSPOverflow();
 
         System.out.println("ALL STACK TESTS PASSED SUCCESSFULLY!");
     }
