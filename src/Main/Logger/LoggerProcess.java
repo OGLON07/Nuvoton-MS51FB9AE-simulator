@@ -1,0 +1,285 @@
+package Main.Logger;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+/**
+ * Independent Logger Process.
+ *
+ * Responsibilities:
+ * - Receive log messages
+ * - Process log messages
+ * - Record EXECUTION events
+ * - Record ERROR events
+ * - Store logs in a file
+ * - Handle invalid messages safely
+ *
+ * This class does NOT implement IPC.
+ * The Core process will be connected during integration.
+ */
+public class LoggerProcess {
+
+    private static final String LOG_FILE = "simulator.log";
+
+    private final BlockingQueue<LogMessage> logQueue;
+
+    private volatile boolean running;
+
+    private Thread loggingThread;
+
+    private PrintWriter logWriter;
+
+    private final DateTimeFormatter timeFormatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public LoggerProcess() {
+        logQueue = new LinkedBlockingQueue<>();
+        running = false;
+    }
+
+    /**
+     * Starts the independent Logger process.
+     */
+    public void start() {
+
+        if (running) {
+            System.out.println("Logger process is already running.");
+            return;
+        }
+
+        try {
+            logWriter = new PrintWriter(
+                    new FileWriter(LOG_FILE, true)
+            );
+        } catch (IOException e) {
+            System.err.println(
+                    "Logger error: Unable to open log file."
+            );
+            return;
+        }
+
+        running = true;
+
+        loggingThread = new Thread(
+                this::processLogs,
+                "Logger-Thread"
+        );
+
+        loggingThread.start();
+
+        System.out.println("Logger process started.");
+    }
+
+    /**
+     * Receives a log message.
+     *
+     * This is intentionally kept independent of IPC.
+     * During integration, the Core/IPC layer can call this method.
+     */
+    public void receiveLog(LogMessage logMessage) {
+
+        if (!running) {
+            System.err.println(
+                    "Logger is not running. Message ignored."
+            );
+            return;
+        }
+
+        if (logMessage == null) {
+            System.err.println(
+                    "Logger received a null message."
+            );
+            return;
+        }
+
+        if (!logMessage.isValid()) {
+            System.err.println(
+                    "Logger received an invalid message."
+            );
+            return;
+        }
+
+        logQueue.offer(logMessage);
+    }
+
+    /**
+     * Continuously processes incoming log messages.
+     */
+    private void processLogs() {
+
+        while (running || !logQueue.isEmpty()) {
+
+            try {
+
+                LogMessage logMessage = logQueue.poll();
+
+                if (logMessage == null) {
+                    Thread.sleep(50);
+                    continue;
+                }
+
+                writeLog(logMessage);
+
+            } catch (InterruptedException e) {
+
+                Thread.currentThread().interrupt();
+
+                if (!running) {
+                    break;
+                }
+
+            } catch (Exception e) {
+
+                // Logger should not crash because of a bad log message.
+                System.err.println(
+                        "Logger processing error: "
+                                + e.getMessage()
+                );
+            }
+        }
+    }
+
+    /**
+     * Writes a log message to both console and log file.
+     */
+    private synchronized void writeLog(LogMessage logMessage) {
+
+        if (logMessage == null || !logMessage.isValid()) {
+            return;
+        }
+
+        String timestamp =
+                LocalDateTime.now().format(timeFormatter);
+
+        String formattedLog =
+                "[" + timestamp + "] "
+                        + logMessage.toString();
+
+        // Console output
+        System.out.println(formattedLog);
+
+        // File output
+        if (logWriter != null) {
+            logWriter.println(formattedLog);
+            logWriter.flush();
+        }
+    }
+
+    /**
+     * Stops the Logger process safely.
+     */
+    public void stop() {
+
+        if (!running) {
+            return;
+        }
+
+        running = false;
+
+        if (loggingThread != null) {
+            loggingThread.interrupt();
+
+            try {
+                loggingThread.join(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (logWriter != null) {
+            logWriter.flush();
+            logWriter.close();
+            logWriter = null;
+        }
+
+        System.out.println("Logger process stopped.");
+    }
+
+    /**
+     * Returns whether the Logger is currently running.
+     */
+    public boolean isRunning() {
+        return running;
+    }
+
+    /**
+     * Returns the number of messages waiting to be processed.
+     */
+    public int getPendingLogCount() {
+        return logQueue.size();
+    }
+
+    /**
+     * Independent test for the Logger.
+     *
+     * No Core, UI, CPU, Memory, Queue or IPC is used here.
+     */
+    public static void main(String[] args) {
+
+        LoggerProcess logger = new LoggerProcess();
+
+        logger.start();
+
+        // Sample execution logs
+        logger.receiveLog(
+                new LogMessage(
+                        LogType.EXECUTION,
+                        "PC=00 Instruction=MOV_A_IMM"
+                )
+        );
+
+        logger.receiveLog(
+                new LogMessage(
+                        LogType.EXECUTION,
+                        "PC=02 Instruction=ADD_A_IMM"
+                )
+        );
+
+        // Sample error log
+        logger.receiveLog(
+                new LogMessage(
+                        LogType.ERROR,
+                        "Unknown opcode 0xAB"
+                )
+        );
+
+        // Another system event
+        logger.receiveLog(
+                new LogMessage(
+                        LogType.EXECUTION,
+                        "PC=04 Instruction=STORE"
+                )
+        );
+
+        // Invalid messages for testing
+        logger.receiveLog(null);
+
+        logger.receiveLog(
+                new LogMessage(
+                        null,
+                        "Invalid log type"
+                )
+        );
+
+        logger.receiveLog(
+                new LogMessage(
+                        LogType.ERROR,
+                        ""
+                )
+        );
+
+        // Give the logging thread time to process messages
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        logger.stop();
+    }
+}
