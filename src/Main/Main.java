@@ -1,9 +1,9 @@
 package Main;
 
-import Main.UI.SimulatorUI;
+import Main.UI.UIProcessMain;
 
 public class Main {
     public static void main(String[] args) {
-        SimulatorUI.launch();
+        UIProcessMain.main(args);
     }
 }
