@@ -81,7 +81,7 @@ public class SimulatorUI extends JFrame {
                 currentInstructionLabel.setText("Current instruction: " + state.lastInstruction);
             }
 
-            System.out.println("[UI Process] Rendered updated CPU state -> PC: " 
+            System.err.println("[UI Process] Rendered updated CPU state -> PC: " 
                     + String.format("0x%04X", state.pc) + " | SP: " + String.format("0x%02X", state.sp));
         });
     }
@@ -142,7 +142,7 @@ public class SimulatorUI extends JFrame {
             appendTrace(traceMsg);
             currentInstructionLabel.setText("State: " + traceMsg);
 
-            System.out.println("[UI Process] Rendered IPC state -> PC: 0x"
+            System.err.println("[UI Process] Rendered IPC state -> PC: 0x"
                     + String.format("%04X", snapshot.pc) + " | Status: " + status);
         });
     }
@@ -420,12 +420,171 @@ public class SimulatorUI extends JFrame {
 
     private void refreshProgramPanel(int[] programMemory, int currentPC) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ADDR  HEX\n");
-        sb.append("----------\n");
-        for (int i = 0; i < programMemory.length; i++) {
-            String marker = (i == currentPC) ? "  <-- PC" : "";
-            sb.append(String.format("0x%04X: %02X%s\n", i, programMemory[i] & 0xFF, marker));
+        sb.append(String.format("%-8s %-10s %-20s\n", "ADDR", "HEX", "INSTRUCTION"));
+        sb.append("------------------------------------------------\n");
+
+        int i = 0;
+        while (i < programMemory.length) {
+            int addr = i;
+            int opcode = programMemory[i] & 0xFF;
+            String hexBytes;
+            String mnemonic;
+            int nextI;
+
+            switch (opcode) {
+                case 0x74: // MOV A,#data
+                    if (i + 1 < programMemory.length) {
+                        int imm = programMemory[i + 1] & 0xFF;
+                        hexBytes = String.format("%02X %02X", opcode, imm);
+                        mnemonic = String.format("MOV A,#0x%02X", imm);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "MOV A,???";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0x24: // ADD A,#data
+                    if (i + 1 < programMemory.length) {
+                        int imm = programMemory[i + 1] & 0xFF;
+                        hexBytes = String.format("%02X %02X", opcode, imm);
+                        mnemonic = String.format("ADD A,#0x%02X", imm);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "ADD A,???";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0x94: // SUBB A,#data
+                    if (i + 1 < programMemory.length) {
+                        int imm = programMemory[i + 1] & 0xFF;
+                        hexBytes = String.format("%02X %02X", opcode, imm);
+                        mnemonic = String.format("SUBB A,#0x%02X", imm);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "SUBB A,???";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0x54: // ANL A,#data
+                    if (i + 1 < programMemory.length) {
+                        int imm = programMemory[i + 1] & 0xFF;
+                        hexBytes = String.format("%02X %02X", opcode, imm);
+                        mnemonic = String.format("ANL A,#0x%02X", imm);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "ANL A,???";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0xE5: // MOV A,addr
+                    if (i + 1 < programMemory.length) {
+                        int direct = programMemory[i + 1] & 0xFF;
+                        hexBytes = String.format("%02X %02X", opcode, direct);
+                        mnemonic = String.format("MOV A,0x%02X", direct);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "MOV A,???";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0xF5: // MOV addr,A
+                    if (i + 1 < programMemory.length) {
+                        int direct = programMemory[i + 1] & 0xFF;
+                        hexBytes = String.format("%02X %02X", opcode, direct);
+                        mnemonic = String.format("MOV 0x%02X,A", direct);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "MOV ???,A";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0x80: // SJMP rel
+                    if (i + 1 < programMemory.length) {
+                        int rel = (byte) programMemory[i + 1];
+                        hexBytes = String.format("%02X %02X", opcode, programMemory[i + 1] & 0xFF);
+                        mnemonic = String.format("SJMP %+d", rel);
+                        nextI = i + 2;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = "SJMP ???";
+                        nextI = i + 1;
+                    }
+                    break;
+
+                case 0x04: // INC A
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "INC A";
+                    nextI = i + 1;
+                    break;
+
+                case 0x14: // DEC A
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "DEC A";
+                    nextI = i + 1;
+                    break;
+
+                case 0xA4: // MUL AB
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "MUL AB";
+                    nextI = i + 1;
+                    break;
+
+                case 0xC0: // PUSH A
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "PUSH A";
+                    nextI = i + 1;
+                    break;
+
+                case 0xD0: // POP A
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "POP A";
+                    nextI = i + 1;
+                    break;
+
+                case 0xFF: // HALT
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "HALT";
+                    nextI = i + 1;
+                    break;
+
+                default:
+                    if (opcode >= 0x78 && opcode <= 0x7F) { // MOV Rn,#data
+                        int r = opcode - 0x78;
+                        if (i + 1 < programMemory.length) {
+                            int imm = programMemory[i + 1] & 0xFF;
+                            hexBytes = String.format("%02X %02X", opcode, imm);
+                            mnemonic = String.format("MOV R%d,#0x%02X", r, imm);
+                            nextI = i + 2;
+                        } else {
+                            hexBytes = String.format("%02X", opcode);
+                            mnemonic = String.format("MOV R%d,???", r);
+                            nextI = i + 1;
+                        }
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = String.format("DB 0x%02X", opcode);
+                        nextI = i + 1;
+                    }
+                    break;
+            }
+
+            String marker = (addr == currentPC) ? "  <-- PC" : "";
+            sb.append(String.format("0x%04X:  %-7s  %-16s%s\n", addr, hexBytes, mnemonic, marker));
+            i = nextI;
         }
+
         programArea.setText(sb.toString());
         programArea.setCaretPosition(0);
     }

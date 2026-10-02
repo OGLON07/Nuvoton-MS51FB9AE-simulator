@@ -242,6 +242,11 @@ public class CoreProcess {
         CPU cpu = new CPU();
         CoreCommandHandler handler = new CoreCommandHandler(cpu);
 
+        // Stream continuous execution state snapshots directly to UI
+        handler.setStateListener(snapshot -> {
+            responseOut.println(IPCProtocol.serializeResponse(CommandResponse.ok(snapshot)));
+        });
+
         // Send startup log
         logOut.println(new LogMessage(LogType.SYSTEM, "Core process started").serialize());
 

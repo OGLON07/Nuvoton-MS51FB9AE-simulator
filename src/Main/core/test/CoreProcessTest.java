@@ -206,6 +206,7 @@ public class CoreProcessTest {
             program[52] = 0xFF; // HALT
 
             core.submitAndWait(new CommandMessage(Command.LOAD, program));
+            core.getHandler().setStepDelayMs(0);
 
             // Start RUN
             CommandResponse runResp = core.submitAndWait(Command.RUN);
@@ -317,6 +318,7 @@ public class CoreProcessTest {
             };
 
             core.submitAndWait(new CommandMessage(Command.LOAD, program));
+            core.getHandler().setStepDelayMs(0);
             // RUN to completion
             core.submitAndWait(Command.RUN);
             Thread.sleep(300);

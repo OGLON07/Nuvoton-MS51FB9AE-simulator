@@ -137,6 +137,28 @@ public class CoreCommandHandler {
         return CommandResponse.ok(captureSnapshot());
     }
 
+    // ==================== State Listener & Speed Control ====================
+
+    @FunctionalInterface
+    public interface StateListener {
+        void onStateChanged(CoreStateSnapshot snapshot);
+    }
+
+    private volatile StateListener stateListener;
+    private volatile int stepDelayMs = 120;
+
+    public void setStateListener(StateListener listener) {
+        this.stateListener = listener;
+    }
+
+    public void setStepDelayMs(int stepDelayMs) {
+        this.stepDelayMs = Math.max(0, stepDelayMs);
+    }
+
+    public int getStepDelayMs() {
+        return stepDelayMs;
+    }
+
     /**
      * Launches the continuous execution loop on a dedicated
      * worker thread. Returns immediately with the current state.
@@ -154,12 +176,27 @@ public class CoreCommandHandler {
         executionThread = new Thread(() -> {
             try {
                 while (runningContinuously && !cpu.isHalted()) {
+                    CoreStateSnapshot snap;
                     synchronized (CoreCommandHandler.this) {
                         if (!runningContinuously || cpu.isHalted()) {
                             break;
                         }
                         cpu.step();
                         cycleCount++;
+                        snap = captureSnapshot();
+                    }
+
+                    if (stateListener != null) {
+                        stateListener.onStateChanged(snap);
+                    }
+
+                    if (stepDelayMs > 0) {
+                        try {
+                            Thread.sleep(stepDelayMs);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -169,6 +206,13 @@ public class CoreCommandHandler {
                 }
             } finally {
                 runningContinuously = false;
+                CoreStateSnapshot finalSnap;
+                synchronized (CoreCommandHandler.this) {
+                    finalSnap = captureSnapshot();
+                }
+                if (stateListener != null) {
+                    stateListener.onStateChanged(finalSnap);
+                }
             }
         }, "Core-Execution-Worker");
 
@@ -225,9 +269,9 @@ public class CoreCommandHandler {
             doPause();
         }
 
+        // Reset CPU state, registers, memory and clear halted flag
+        cpu.reset();
         cpu.getMemory().loadProgram(program);
-        // Reset CPU state but preserve the newly loaded program
-        cpu.getRegisters().reset();
         cycleCount = 0;
         lastError  = null;
         return CommandResponse.ok(captureSnapshot());

@@ -8,6 +8,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 
 /**
  * IPC-based communicator that sends commands to the Core process
@@ -32,18 +34,38 @@ public class IPCCoreCommunicator implements CoreCommunicator {
     private Thread listenerThread;
 
     /**
-     * Creates a communicator connected to a Core child process.
+     * Creates an IPC communicator using standard input and output streams.
+     * Used when the UI process is launched as an independent process by
+     * the native POSIX launcher.
      *
-     * @param coreProcess the Core child process (ProcessBuilder.start())
+     * @param ui the UI instance to receive state updates
+     */
+    public IPCCoreCommunicator(SimulatorUI ui) {
+        this(new InputStreamReader(System.in),
+             new OutputStreamWriter(System.out),
+             ui);
+    }
+
+    /**
+     * Creates an IPC communicator with custom Reader and Writer streams.
+     */
+    public IPCCoreCommunicator(Reader in, Writer out, SimulatorUI ui) {
+        this.toCore = new PrintWriter(out, true);
+        this.fromCore = new BufferedReader(in);
+        this.ui = ui;
+        this.running = false;
+    }
+
+    /**
+     * Creates a communicator connected to a Core child process (backward compatibility).
+     *
+     * @param coreProcess the Core child process
      * @param ui          the UI instance to receive state updates
      */
     public IPCCoreCommunicator(Process coreProcess, SimulatorUI ui) {
-        this.toCore = new PrintWriter(
-                new OutputStreamWriter(coreProcess.getOutputStream()), true);
-        this.fromCore = new BufferedReader(
-                new InputStreamReader(coreProcess.getInputStream()));
-        this.ui = ui;
-        this.running = false;
+        this(new InputStreamReader(coreProcess.getInputStream()),
+             new OutputStreamWriter(coreProcess.getOutputStream()),
+             ui);
     }
 
     /**
@@ -57,7 +79,7 @@ public class IPCCoreCommunicator implements CoreCommunicator {
             try {
                 String line;
                 while (running && (line = fromCore.readLine()) != null) {
-                    handleResponse(line);
+                    handleResponse(line.trim());
                 }
             } catch (Exception e) {
                 if (running) {
@@ -148,6 +170,9 @@ public class IPCCoreCommunicator implements CoreCommunicator {
      * Handles a response line from the Core process.
      */
     private void handleResponse(String line) {
+        if (line == null || line.isEmpty()) return;
+        if (!line.startsWith(IPCProtocol.RSP_PREFIX)) return;
+
         IPCProtocol.ParsedResponse resp = IPCProtocol.parseResponse(line);
         if (resp == null) return;
 

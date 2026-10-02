@@ -261,8 +261,8 @@ public class LoggerProcess {
                 if (msg != null && msg.isValid()) {
                     logger.receiveLog(msg);
                 } else {
-                    // Handle malformed messages safely
-                    System.err.println("[Logger] Malformed log message: " + line);
+                    // Wrap raw CPU execution debug lines (e.g. FETCH/DECODE) as EXECUTION log entries
+                    logger.receiveLog(new LogMessage(LogType.EXECUTION, line));
                 }
             }
         } catch (Exception e) {
