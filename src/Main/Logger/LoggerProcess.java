@@ -1,9 +1,13 @@
 package Main.Logger;
 
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -16,11 +20,17 @@ import java.util.concurrent.LinkedBlockingQueue;
  * - Process log messages
  * - Record EXECUTION events
  * - Record ERROR events
+ * - Record SYSTEM events
  * - Store logs in a file
  * - Handle invalid messages safely
  *
- * This class does NOT implement IPC.
- * The Core process will be connected during integration.
+ * <h3>IPC Mode (--ipc)</h3>
+ * When started with {@code --ipc}, reads serialized LogMessages
+ * from stdin (piped from Core's stderr). Each line is deserialized
+ * and written to the log file.
+ *
+ * <h3>In-process Mode (default)</h3>
+ * Messages are submitted via {@link #receiveLog(LogMessage)}.
  */
 public class LoggerProcess {
 
@@ -153,14 +163,25 @@ public class LoggerProcess {
             return;
         }
 
-        String timestamp =
-                LocalDateTime.now().format(timeFormatter);
+        String timestamp;
+        if (logMessage.getTimestamp() > 0) {
+            timestamp = LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(logMessage.getTimestamp()),
+                    ZoneId.systemDefault()
+            ).format(timeFormatter);
+        } else {
+            timestamp = LocalDateTime.now().format(timeFormatter);
+        }
 
         String formattedLog =
                 "[" + timestamp + "] "
                         + logMessage.toString();
 
-        // Console output
+        if (logMessage.getDetails() != null && !logMessage.getDetails().isEmpty()) {
+            formattedLog += " | " + logMessage.getDetails();
+        }
+
+        // Console output (stdout of Logger process)
         System.out.println(formattedLog);
 
         // File output
@@ -214,13 +235,68 @@ public class LoggerProcess {
         return logQueue.size();
     }
 
+    // ==================== IPC Mode ====================
+
     /**
-     * Independent test for the Logger.
-     *
-     * No Core, UI, CPU, Memory, Queue or IPC is used here.
+     * Runs the Logger in IPC mode: reads serialized LogMessages
+     * from stdin (piped from Core's stderr).
+     */
+    private static void runIPCMode() {
+        LoggerProcess logger = new LoggerProcess();
+        logger.start();
+
+        // Write a startup marker
+        logger.receiveLog(new LogMessage(LogType.SYSTEM, "Logger process started in IPC mode"));
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(System.in))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                LogMessage msg = LogMessage.deserialize(line);
+
+                if (msg != null && msg.isValid()) {
+                    logger.receiveLog(msg);
+                } else {
+                    // Handle malformed messages safely
+                    System.err.println("[Logger] Malformed log message: " + line);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Logger] Error reading stdin: " + e.getMessage());
+        }
+
+        // Drain remaining messages
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        logger.stop();
+    }
+
+    // ==================== Entry Point ====================
+
+    /**
+     * Entry point. Supports:
+     * <ul>
+     *   <li>{@code --ipc}: IPC mode — reads LogMessages from stdin</li>
+     *   <li>Default: standalone self-test mode</li>
+     * </ul>
      */
     public static void main(String[] args) {
 
+        // Check for IPC mode
+        if (args.length > 0 && "--ipc".equals(args[0])) {
+            runIPCMode();
+            return;
+        }
+
+        // Standalone self-test (original behavior)
         LoggerProcess logger = new LoggerProcess();
 
         logger.start();
@@ -251,8 +327,8 @@ public class LoggerProcess {
         // Another system event
         logger.receiveLog(
                 new LogMessage(
-                        LogType.EXECUTION,
-                        "PC=04 Instruction=STORE"
+                        LogType.SYSTEM,
+                        "System event test"
                 )
         );
 

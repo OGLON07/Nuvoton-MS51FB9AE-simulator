@@ -6,6 +6,7 @@ import javax.swing.*;
 
 import javax.swing.border.EmptyBorder;
 
+import Main.IPC.IPCProtocol;
 
 
 public class SimulatorUI extends JFrame {
@@ -37,6 +38,7 @@ public class SimulatorUI extends JFrame {
     private final JButton resetButton = new JButton("RESET");
     private final JButton stepButton = new JButton("STEP");
     private final JButton runButton = new JButton("RUN");
+    private final JButton pauseButton = new JButton("PAUSE");
 
     public SimulatorUI() {
         super("MS51FB9AE Microcontroller Simulator (UI Process)");
@@ -51,7 +53,8 @@ public class SimulatorUI extends JFrame {
     }
 
     /**
-     * Called when a state update arrives to update GUI elements safely on the EDT
+     * Called when a legacy CPUState update arrives (mock mode).
+     * Kept for backward compatibility with MockCoreCommunicator.
      */
     public void onStateReceived(CPUState state) {
         if (state == null) return;
@@ -80,6 +83,78 @@ public class SimulatorUI extends JFrame {
 
             System.out.println("[UI Process] Rendered updated CPU state -> PC: " 
                     + String.format("0x%04X", state.pc) + " | SP: " + String.format("0x%02X", state.sp));
+        });
+    }
+
+    /**
+     * Called when a full CoreStateSnapshot arrives via IPC.
+     * Updates all UI panels with the complete simulator state.
+     */
+    public void onSnapshotReceived(IPCProtocol.SnapshotData snapshot) {
+        if (snapshot == null) return;
+
+        SwingUtilities.invokeLater(() -> {
+            // 1. Update CPU Register Display
+            pcLabel.setText(String.format("%04X", snapshot.pc));
+            spLabel.setText(hex(snapshot.sp));
+            aLabel.setText(hex(snapshot.acc));
+            bLabel.setText(hex(snapshot.b));
+            pswLabel.setText(hex(snapshot.psw));
+
+            // R0-R7
+            for (int i = 0; i < 8; i++) {
+                if (rLabels[i] != null) {
+                    rLabels[i].setText(hex(snapshot.r[i]));
+                }
+            }
+
+            // Flags
+            cyLabel.setText(snapshot.cy ? "1" : "0");
+            acLabel.setText(snapshot.ac ? "1" : "0");
+            ovLabel.setText(snapshot.ov ? "1" : "0");
+
+            // 2. Update Status
+            String status = snapshot.getStatusString();
+            statusLabel.setText("Status: " + status);
+
+            // 3. Update Data Memory
+            if (snapshot.dataMemory != null && snapshot.dataMemory.length > 0) {
+                refreshDataMemoryPanelFromInts(snapshot.dataMemory);
+            }
+
+            // 4. Update Stack View
+            if (snapshot.stackContents != null) {
+                refreshStackPanelFromInts(snapshot.sp, snapshot.stackContents);
+            }
+
+            // 5. Update Queue View
+            refreshQueuePanel(snapshot);
+
+            // 6. Update Program View
+            if (snapshot.programMemory != null && snapshot.programMemory.length > 0) {
+                refreshProgramPanel(snapshot.programMemory, snapshot.pc);
+            }
+
+            // 7. Trace info
+            String traceMsg = String.format("PC=0x%04X A=0x%02X SP=0x%02X cycles=%d %s",
+                    snapshot.pc, snapshot.acc, snapshot.sp,
+                    snapshot.cycleCount, status);
+            appendTrace(traceMsg);
+            currentInstructionLabel.setText("State: " + traceMsg);
+
+            System.out.println("[UI Process] Rendered IPC state -> PC: 0x"
+                    + String.format("%04X", snapshot.pc) + " | Status: " + status);
+        });
+    }
+
+    /**
+     * Called when an error response arrives via IPC.
+     */
+    public void onErrorReceived(String errorMessage) {
+        SwingUtilities.invokeLater(() -> {
+            statusLabel.setText("Status: ERROR");
+            appendTrace("ERROR: " + errorMessage);
+            currentInstructionLabel.setText("Error: " + errorMessage);
         });
     }
 
@@ -119,6 +194,7 @@ public class SimulatorUI extends JFrame {
         resetButton.addActionListener(e -> sendCommandToCore("RESET"));
         stepButton.addActionListener(e -> sendCommandToCore("STEP"));
         runButton.addActionListener(e -> sendCommandToCore("RUN"));
+        pauseButton.addActionListener(e -> sendCommandToCore("PAUSE"));
     }
 
     private void sendCommandToCore(String command) {
@@ -201,6 +277,7 @@ public class SimulatorUI extends JFrame {
         controls.add(resetButton);
         controls.add(stepButton);
         controls.add(runButton);
+        controls.add(pauseButton);
         controls.add(statusLabel);
         bottom.add(controls, BorderLayout.NORTH);
 
@@ -244,6 +321,8 @@ public class SimulatorUI extends JFrame {
         return String.format("%02X", value & 0xFF);
     }
 
+    // ==================== Data Memory rendering ====================
+
     private void refreshDataMemoryPanel(byte[] ram) {
         StringBuilder sb = new StringBuilder();
         sb.append("ADDR  00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F\n");
@@ -262,6 +341,26 @@ public class SimulatorUI extends JFrame {
         dataMemoryArea.setCaretPosition(0);
     }
 
+    private void refreshDataMemoryPanelFromInts(int[] ram) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ADDR  00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F\n");
+        sb.append("-------------------------------------------------------\n");
+        for (int row = 0; row < ram.length; row += 16) {
+            sb.append(String.format("0x%02X  ", row));
+            for (int col = 0; col < 16; col++) {
+                if (row + col < ram.length) {
+                    sb.append(String.format("%02X ", ram[row + col] & 0xFF));
+                }
+                if (col == 7) sb.append(" ");
+            }
+            sb.append("\n");
+        }
+        dataMemoryArea.setText(sb.toString());
+        dataMemoryArea.setCaretPosition(0);
+    }
+
+    // ==================== Stack rendering ====================
+
     private void refreshStackPanel(int sp, String[] stackData) {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("Stack Pointer (SP): 0x%02X\n", sp));
@@ -276,5 +375,58 @@ public class SimulatorUI extends JFrame {
         }
         stackArea.setText(sb.toString());
         stackArea.setCaretPosition(0);
+    }
+
+    private void refreshStackPanelFromInts(int sp, int[] stackContents) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Stack Pointer (SP): 0x%02X\n", sp));
+        sb.append("----------------------------------\n");
+
+        if (sp <= 0x07) {
+            sb.append("Stack is empty\n");
+        } else {
+            for (int i = 0; i < stackContents.length; i++) {
+                int addr = 0x08 + i;
+                String marker = (addr == sp) ? "  <-- SP (top)" : "";
+                sb.append(String.format("RAM[0x%02X]: 0x%02X%s\n", addr, stackContents[i] & 0xFF, marker));
+            }
+        }
+        stackArea.setText(sb.toString());
+        stackArea.setCaretPosition(0);
+    }
+
+    // ==================== Queue rendering ====================
+
+    private void refreshQueuePanel(IPCProtocol.SnapshotData snapshot) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Head: %d  |  Tail: %d  |  Count: %d  |  Capacity: %d\n",
+                snapshot.queueHead, snapshot.queueTail, snapshot.queueCount, snapshot.queueCapacity));
+        sb.append("------------------------------------------\n");
+
+        if (snapshot.queueContents != null && snapshot.queueContents.length > 0) {
+            sb.append("Contents (FIFO order):\n");
+            for (int i = 0; i < snapshot.queueContents.length; i++) {
+                sb.append(String.format("  [%d]: 0x%02X\n", i, snapshot.queueContents[i] & 0xFF));
+            }
+        } else {
+            sb.append("Queue is empty\n");
+        }
+
+        queueArea.setText(sb.toString());
+        queueArea.setCaretPosition(0);
+    }
+
+    // ==================== Program rendering ====================
+
+    private void refreshProgramPanel(int[] programMemory, int currentPC) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ADDR  HEX\n");
+        sb.append("----------\n");
+        for (int i = 0; i < programMemory.length; i++) {
+            String marker = (i == currentPC) ? "  <-- PC" : "";
+            sb.append(String.format("0x%04X: %02X%s\n", i, programMemory[i] & 0xFF, marker));
+        }
+        programArea.setText(sb.toString());
+        programArea.setCaretPosition(0);
     }
 }

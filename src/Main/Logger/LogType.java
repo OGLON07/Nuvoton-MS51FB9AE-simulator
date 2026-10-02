@@ -5,5 +5,6 @@ package Main.Logger;
  */
 public enum LogType {
     EXECUTION,
-    ERROR
+    ERROR,
+    SYSTEM
 }

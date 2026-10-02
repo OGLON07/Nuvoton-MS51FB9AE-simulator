@@ -1,11 +1,18 @@
 package Main.core;
 
 import Main.CPU.CPU;
+import Main.Logger.LogMessage;
+import Main.Logger.LogType;
 import Main.core.command.Command;
 import Main.core.command.CommandMessage;
 import Main.core.command.CommandResponse;
 import Main.core.state.CoreStateSnapshot;
+import Main.IPC.IPCProtocol;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -17,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *   ┌──────────────────────────────────────────────┐
  *   │              CoreProcess (main)              │
  *   │                                              │
- *   │  commandQueue ──► Command Processing Loop    │
+ *   │  stdin  ──► Command Processing Loop          │
  *   │                       │                      │
  *   │                       ▼                      │
  *   │              CoreCommandHandler              │
@@ -28,19 +35,20 @@ import java.util.concurrent.LinkedBlockingQueue;
  *   │        Registers            (RUN thread)     │
  *   │        Memory                                │
  *   │        Queue                                 │
+ *   │                                              │
+ *   │  stdout ◄── Responses to UI                  │
+ *   │  stderr ◄── Log messages to Logger           │
  *   └──────────────────────────────────────────────┘
  * </pre>
  *
- * <h3>Usage</h3>
- * <ol>
- *   <li>Instantiate via {@code new CoreProcess()} or call
- *       {@code CoreProcess.main(args)}.</li>
- *   <li>Submit commands through {@link #submitCommand(CommandMessage)}
- *       from any thread.</li>
- *   <li>Call {@link #start()} to begin the command processing loop
- *       (blocks the calling thread).</li>
- *   <li>Send {@link Command#SHUTDOWN} to terminate cleanly.</li>
- * </ol>
+ * <h3>IPC Mode (--ipc)</h3>
+ * When started with {@code --ipc}, the Core reads commands from
+ * stdin and writes responses to stdout (for the UI) and log
+ * messages to stderr (for the Logger).
+ *
+ * <h3>In-process Mode (default)</h3>
+ * Commands are submitted via {@link #submitCommand(CommandMessage)}
+ * and processed on the command loop thread. Useful for testing.
  *
  * <p>No Swing/AWT/UI imports or dependencies exist in this class.</p>
  */
@@ -70,8 +78,7 @@ public class CoreProcess {
     /**
      * Functional callback for in-memory test harnesses.
      * A real IPC transport would replace this with socket/pipe
-     * writes, but per constraints we only provide an abstract
-     * interface and an in-memory test harness.
+     * writes.
      */
     @FunctionalInterface
     public interface ResponseListener {
@@ -213,17 +220,108 @@ public class CoreProcess {
         return handler;
     }
 
+    // ==================== IPC Mode ====================
+
+    /**
+     * Runs the Core in IPC mode: reads commands from stdin,
+     * writes responses to stdout, writes log messages to stderr.
+     *
+     * This is the mode used when the Core runs as a child process
+     * spawned by the Launcher via ProcessBuilder.
+     */
+    private static void runIPCMode() {
+        // Raw stdout file descriptor for protocol responses to UI
+        PrintWriter responseOut = new PrintWriter(
+                new OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out)), true);
+        PrintWriter logOut = new PrintWriter(
+                new OutputStreamWriter(System.err), true);
+
+        // Redirect standard System.out to System.err so CPU internal prints don't corrupt UI IPC pipe
+        System.setOut(new java.io.PrintStream(System.err, true));
+
+        CPU cpu = new CPU();
+        CoreCommandHandler handler = new CoreCommandHandler(cpu);
+
+        // Send startup log
+        logOut.println(new LogMessage(LogType.SYSTEM, "Core process started").serialize());
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(System.in))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                CommandMessage msg = IPCProtocol.deserializeCommand(line);
+
+                if (msg == null) {
+                    // Invalid command
+                    responseOut.println(IPCProtocol.serializeResponse(
+                            CommandResponse.error("Invalid command: " + line)));
+                    logOut.println(new LogMessage(LogType.ERROR,
+                            "Invalid command received: " + line).serialize());
+                    continue;
+                }
+
+                // Log the command
+                logOut.println(new LogMessage(LogType.EXECUTION,
+                        "Command: " + msg.getCommand().name()).serialize());
+
+                // Process the command
+                CommandResponse response = handler.handleCommand(msg);
+
+                // Send response to UI via stdout
+                responseOut.println(IPCProtocol.serializeResponse(response));
+
+                // Log the result
+                if (response.isSuccess()) {
+                    String detail = "";
+                    if (response.getSnapshot() != null) {
+                        CoreStateSnapshot snap = response.getSnapshot();
+                        detail = "PC=0x" + Integer.toHexString(snap.getPC()).toUpperCase()
+                                + " A=0x" + Integer.toHexString(snap.getAccumulator()).toUpperCase()
+                                + " cycles=" + snap.getCycleCount();
+                    }
+                    logOut.println(new LogMessage(LogType.EXECUTION,
+                            msg.getCommand().name() + " completed", detail).serialize());
+                } else {
+                    logOut.println(new LogMessage(LogType.ERROR,
+                            msg.getCommand().name() + " failed: " + response.getErrorMessage()).serialize());
+                }
+
+                // SHUTDOWN terminates the loop
+                if (msg.getCommand() == Command.SHUTDOWN) {
+                    logOut.println(new LogMessage(LogType.SYSTEM,
+                            "Core process shutting down").serialize());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            logOut.println(new LogMessage(LogType.ERROR,
+                    "Core process error: " + e.getMessage()).serialize());
+        }
+    }
+
     // ==================== Entry point ====================
 
     /**
      * Standalone entry point.
      *
-     * <p>Boots the Core process, prints a ready banner, and blocks
-     * on the command loop.  In a real deployment an IPC adapter
-     * would feed commands into the queue; for now the process
-     * simply waits.</p>
+     * <p>Supports two modes:</p>
+     * <ul>
+     *   <li>{@code --ipc}: IPC mode — reads stdin, writes stdout/stderr</li>
+     *   <li>{@code --self-test}: Self-test mode for verification</li>
+     *   <li>Default: starts command loop waiting for in-process commands</li>
+     * </ul>
      */
     public static void main(String[] args) {
+        // Check for IPC mode
+        if (args.length > 0 && "--ipc".equals(args[0])) {
+            runIPCMode();
+            return;
+        }
+
         System.out.println("========================================");
         System.out.println("  Nuvoton MS51FB9AE — Core Process");
         System.out.println("  Headless Simulator Engine (Week 4)");
