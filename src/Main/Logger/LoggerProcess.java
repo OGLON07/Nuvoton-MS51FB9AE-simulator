@@ -34,7 +34,11 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class LoggerProcess {
 
-    private static final String LOG_FILE = "simulator.log";
+    /** Log file path; override with -Dsimulator.log=PATH (default: ./simulator.log). */
+    private static final String LOG_FILE = System.getProperty("simulator.log", "simulator.log");
+
+    /** Sentinel placed on the queue by stop(); tells the worker to finish. */
+    private static final LogMessage STOP_MARKER = new LogMessage(LogType.SYSTEM, "stop");
 
     private final BlockingQueue<LogMessage> logQueue;
 
@@ -118,39 +122,26 @@ public class LoggerProcess {
     }
 
     /**
-     * Continuously processes incoming log messages.
+     * Worker loop: blocks on the queue (no polling, no sleeping) and
+     * writes each message until the stop marker arrives. Everything queued
+     * before the marker is still written, so no log lines are lost.
      */
     private void processLogs() {
-
-        while (running || !logQueue.isEmpty()) {
-
-            try {
-
-                LogMessage logMessage = logQueue.poll();
-
-                if (logMessage == null) {
-                    Thread.sleep(50);
-                    continue;
-                }
-
-                writeLog(logMessage);
-
-            } catch (InterruptedException e) {
-
-                Thread.currentThread().interrupt();
-
-                if (!running) {
+        try {
+            while (true) {
+                LogMessage logMessage = logQueue.take();
+                if (logMessage == STOP_MARKER) {
                     break;
                 }
-
-            } catch (Exception e) {
-
-                // Logger should not crash because of a bad log message.
-                System.err.println(
-                        "Logger processing error: "
-                                + e.getMessage()
-                );
+                try {
+                    writeLog(logMessage);
+                } catch (RuntimeException e) {
+                    // A bad message must not kill the logger.
+                    System.err.println("Logger processing error: " + e.getMessage());
+                }
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -192,7 +183,8 @@ public class LoggerProcess {
     }
 
     /**
-     * Stops the Logger process safely.
+     * Stops the Logger: refuses new messages, lets the worker drain what is
+     * already queued, then closes the file.
      */
     public void stop() {
 
@@ -200,13 +192,12 @@ public class LoggerProcess {
             return;
         }
 
-        running = false;
+        running = false;               // receiveLog() now rejects new messages
+        logQueue.offer(STOP_MARKER);   // worker exits after writing everything before it
 
         if (loggingThread != null) {
-            loggingThread.interrupt();
-
             try {
-                loggingThread.join(1000);
+                loggingThread.join();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -261,21 +252,17 @@ public class LoggerProcess {
                 if (msg != null && msg.isValid()) {
                     logger.receiveLog(msg);
                 } else {
-                    // Wrap raw CPU execution debug lines (e.g. FETCH/DECODE) as EXECUTION log entries
-                    logger.receiveLog(new LogMessage(LogType.EXECUTION, line));
+                    // Malformed line: record it (truncated) as an ERROR and keep going.
+                    String shown = line.length() > 200 ? line.substring(0, 200) + "..." : line;
+                    logger.receiveLog(new LogMessage(LogType.ERROR,
+                            "Malformed log message received", shown));
                 }
             }
         } catch (Exception e) {
             System.err.println("[Logger] Error reading stdin: " + e.getMessage());
         }
 
-        // Drain remaining messages
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
+        // EOF on stdin = Core closed its end of the pipe. stop() drains the queue.
         logger.stop();
     }
 
@@ -348,13 +335,6 @@ public class LoggerProcess {
                         ""
                 )
         );
-
-        // Give the logging thread time to process messages
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
         logger.stop();
     }

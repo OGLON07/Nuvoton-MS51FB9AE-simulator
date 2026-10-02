@@ -54,7 +54,8 @@ public final class CoreStateSnapshot implements Serializable {
 
     // ==================== Memory ====================
 
-    /** Complete program memory image (ROM — 16 KB). */
+    /** Loaded portion of program memory only ({@code programSize} bytes),
+     *  NOT the full 16 KB ROM (the rest is zeros and is not transmitted). */
     private final int[] programMemory;
 
     /** Number of bytes actually loaded into program memory. */
@@ -103,6 +104,12 @@ public final class CoreStateSnapshot implements Serializable {
     /** Total number of instruction cycles executed since last reset. */
     private final long cycleCount;
 
+    /** Core status word: READY, LOADED, RESET, RUNNING, PAUSED, HALTED. */
+    private final String status;
+
+    /** Last executed instruction, e.g. "PC=0x0002 ADD_A_IMM 0x05", or null. */
+    private final String lastInstruction;
+
     // ==================== Constructor ====================
 
     private CoreStateSnapshot(Builder b) {
@@ -132,6 +139,8 @@ public final class CoreStateSnapshot implements Serializable {
         this.executing      = b.executing;
         this.lastError      = b.lastError;
         this.cycleCount     = b.cycleCount;
+        this.status         = b.status;
+        this.lastInstruction = b.lastInstruction;
     }
 
     // ==================== Public Accessors (all return copies) ====================
@@ -168,6 +177,8 @@ public final class CoreStateSnapshot implements Serializable {
     public boolean isExecuting()     { return executing; }
     public String  getLastError()    { return lastError; }
     public long    getCycleCount()   { return cycleCount; }
+    public String  getStatus()       { return status; }
+    public String  getLastInstruction() { return lastInstruction; }
 
     // ==================== Factory — capture from live hardware ====================
 
@@ -188,6 +199,22 @@ public final class CoreStateSnapshot implements Serializable {
                                             boolean isExecuting,
                                             String lastError,
                                             long cycleCount) {
+        String status = cpu.isHalted() ? "HALTED" : (isExecuting ? "RUNNING" : "READY");
+        return capture(cpu, queue, isExecuting, lastError, cycleCount, status, null);
+    }
+
+    /**
+     * Same as above but also records the Core status word and the last
+     * executed instruction as plain strings, so the UI needs no
+     * knowledge of CPU internals.
+     */
+    public static CoreStateSnapshot capture(CPU cpu,
+                                            Queue queue,
+                                            boolean isExecuting,
+                                            String lastError,
+                                            long cycleCount,
+                                            String status,
+                                            String lastInstruction) {
         Registers regs = cpu.getRegisters();
         Memory    mem  = cpu.getMemory();
 
@@ -259,6 +286,8 @@ public final class CoreStateSnapshot implements Serializable {
         b.executing  = isExecuting;
         b.lastError  = lastError;
         b.cycleCount = cycleCount;
+        b.status     = status;
+        b.lastInstruction = lastInstruction;
 
         return new CoreStateSnapshot(b);
     }
@@ -297,6 +326,8 @@ public final class CoreStateSnapshot implements Serializable {
         boolean executing;
         String  lastError;
         long    cycleCount;
+        String  status = "READY";
+        String  lastInstruction;
     }
 
     @Override

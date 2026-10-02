@@ -28,3 +28,7 @@ desktop.ini
 *.tmp
 *.bak
 *.swp
+
+# --- Week 4 build/test artefacts ---
+out/
+benchmark/*.txt

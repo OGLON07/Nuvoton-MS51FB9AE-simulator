@@ -22,6 +22,8 @@ public enum Opcode {
     PUSH_A(0xC0),
     POP_A(0xD0),
 
+    NOP(0x00),
+
     HALT(0xFF);
 
     private final int code;

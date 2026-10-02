@@ -86,6 +86,7 @@ public class InstructionExecutor {
                 memory.writeData(instruction.getOperand(), registers.getAccumulator());
                 break;
 
+            case NOP:
             case HALT:
                 break;
 

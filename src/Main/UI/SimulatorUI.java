@@ -139,6 +139,9 @@ public class SimulatorUI extends JFrame {
             String traceMsg = String.format("PC=0x%04X A=0x%02X SP=0x%02X cycles=%d %s",
                     snapshot.pc, snapshot.acc, snapshot.sp,
                     snapshot.cycleCount, status);
+            if (snapshot.lastInstruction != null) {
+                traceMsg = "[" + snapshot.lastInstruction + "] " + traceMsg;
+            }
             appendTrace(traceMsg);
             currentInstructionLabel.setText("State: " + traceMsg);
 

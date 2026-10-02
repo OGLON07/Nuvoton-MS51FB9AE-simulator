@@ -31,75 +31,26 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 | Team Member | Primary Role | Secondary Role | Week 2 Responsibilities |
 | :--- | :--- | :--- | :--- |
 | Gilon Prince Serrao | CPU Core & Instruction Decoder | Architecture & Repository Lead | Integrating the CPU core, Implementing registers and CPU state, Implementing FETCH → DECODE → EXECUTE flow |
-| asad moidhin | Memory & Stack Management | System Documentation | Implementing memory functionality, instruction representation and related components |
-| Melbin K Vinod | Data Structures & Process Control | Unit Testing & QA | team discussions, documenting agenda and decisions, and creating the meeting report. |
-| Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | Developing the simulator UI, Implementing CPU state and execution trace display, UI controls and execution visualization. |
+| asad moidhin | Memory & Stack Management | System Documentation |  Implementing memory functionality, instruction representation and related components |
+| Melbin K Vinod  | Data Structures & Process Control | Unit Testing & QA | team discussions, documenting agenda and decisions, and creating the meeting report.|
+| Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | Developing the simulator UI, Implementing CPU state and execution trace display,UI controls and execution visualization. |
 
-## 7. Multi-Process Architecture (Week 4 IPC)
+## 7. Selected Programming Language
+* **Language:** Java
+* **Reason for Selection:** We all learned Java in our previous classes, so we are comfortable with it. Object-Oriented Programming makes it really easy to treat the CPU, Memory, and Registers as separate objects. Also, Java has built-in queues and lists, which will save us a lot of time when building the OS scheduling part.
 
-The simulator is built entirely in **100% Pure Java** and runs as **three separate OS processes** connected through standard I/O pipes:
+## 8. Initial System Architecture
+![System Architecture](images/System%20Architecture%202.png)
 
-```text
-               ┌──────────────────────────────────────────────┐
-               │              1. UI PROCESS                   │
-               │   Swing User Interface & IPCCoreCommunicator │
-               └──────────────┬────────────────────────▲──────┘
-          stdin (Commands)    │                        │ stdout (Snapshots)
-          pipe_ui_to_core     │                        │ pipe_core_to_ui
-                              ▼                        │
-               ┌───────────────────────────────────────┴──────┐
-               │             2. CORE PROCESS                  │
-               │   8051 CPU, Memory, Stack, Queue Engine      │
-               └──────────────────────────────┬───────────────┘
-                                 stderr (Logs)│
-                           pipe_core_to_logger│
-                                              ▼
-               ┌──────────────────────────────────────────────┐
-               │            3. LOGGER PROCESS                 │
-               │   Independent Logger & File Writer           │
-               └──────────────────────────────────────────────┘
-```
 
-### IPC Mechanism
-* **Pipes:** Process stream pipes (`stdin`, `stdout`, `stderr`).
-* **Process Creation:** `ProcessBuilder` spawning independent JVM processes with distinct OS Process IDs (PIDs).
-* **Cross-Platform:** Runs natively on Windows, Linux, WSL, and macOS without requiring any C compiler or native code.
+## 9. Initial Development Plan
+* Design Process Control Blocks (PCBs) to save process states and register snapshots.
+* Set up Ready Queues and Circular Queues to manage running programs.
+* Implement the FCFS, Round Robin, and Priority scheduling algorithms.
+* Implement context switching and connect process management with the CPU simulator.
+* Extend the simulator UI to display process and scheduling information.
 
----
+## 10. Week 4: Three-Process Simulator (UI / Core / Logger over POSIX pipes)
+See [docs/WEEK4_IPC.md](docs/WEEK4_IPC.md) for architecture, IPC justification, protocol, thread model, test results and benchmark.
 
-## 8. Build & Run Instructions (Java Only)
-
-### Prerequisites
-* Java JDK (version 17 or higher)
-
-### 1. Compile All Sources
-```bash
-javac -d out -sourcepath src src/Main/Main.java src/Main/Launcher.java src/Main/CPU/*.java src/Main/instruction/*.java src/Main/Memory/*.java src/Main/Queue/*.java src/Main/UI/*.java src/Main/core/*.java src/Main/core/command/*.java src/Main/core/state/*.java src/Main/Logger/*.java src/Main/IPC/*.java
-```
-
-### 2. Run Test Suites
-```bash
-# Compile tests
-javac -d out -cp out -sourcepath src tests/*.java
-
-# Run unit & integration tests
-java -ea -cp out DataMemoryTest
-java -ea -cp out StackTest
-java -ea -cp out QueueTest
-java -ea -cp out Main.core.test.CoreProcessTest
-java -ea -cp out IPCTest
-```
-
-### 3. Launch Full 3-Process Simulator
-```bash
-java -cp out Main.Main
-```
-
----
-
-## 9. Test Results Summary
-* **Data Memory:** 6 / 6 Passed
-* **Stack Operations:** 3 / 3 Passed
-* **FIFO Queue:** 6 / 6 Passed
-* **Core Engine:** 11 / 11 Passed
-* **IPC Protocol & Multi-Process:** 6 / 6 Passed
+Quick start on Ubuntu/WSL: `sudo apt install openjdk-21-jdk gcc make`, then `./build.sh`, `./run.sh`, `tests/run_ipc_tests.sh`.

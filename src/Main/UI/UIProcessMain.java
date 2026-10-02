@@ -18,13 +18,27 @@ public class UIProcessMain {
     public static void main(String[] args) {
         boolean ipcMode = args.length > 0 && "--ipc".equals(args[0]);
 
+        // In IPC mode fd 0 / fd 1 are the pipes to the Core (set up by the native
+        // POSIX launcher). Grab them now, then point System.out at stderr so that
+        // no println() anywhere in the UI can corrupt the protocol stream.
+        final java.io.Reader fromCore;
+        final java.io.Writer toCore;
+        if (ipcMode) {
+            fromCore = new java.io.InputStreamReader(new java.io.FileInputStream(java.io.FileDescriptor.in));
+            toCore = new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out));
+            System.setOut(System.err);
+        } else {
+            fromCore = null;
+            toCore = null;
+        }
+
         try {
             SwingUtilities.invokeLater(() -> {
                 try {
                     SimulatorUI ui = new SimulatorUI();
 
                     if (ipcMode) {
-                        IPCCoreCommunicator communicator = new IPCCoreCommunicator(ui);
+                        IPCCoreCommunicator communicator = new IPCCoreCommunicator(fromCore, toCore, ui);
                         ui.setCommunicator(communicator);
                         communicator.startListening();
 
@@ -41,7 +55,7 @@ public class UIProcessMain {
 
                         // Request initial CPU snapshot from Core
                         communicator.sendCommand("GET_STATE");
-                        System.err.println("[UI Process] Started in POSIX IPC mode.");
+                        System.err.println("[UI Process] Started in POSIX pipe IPC mode (pid " + ProcessHandle.current().pid() + ").");
                     } else {
                         CoreCommunicator mockCommunicator = new MockCoreCommunicator(ui);
                         ui.setCommunicator(mockCommunicator);

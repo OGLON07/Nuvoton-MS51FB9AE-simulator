@@ -45,6 +45,9 @@ import java.util.concurrent.TimeUnit;
  * </pre>
  */
 public class Launcher {
+    // NOTE: this is the portable FALLBACK launcher (Java ProcessBuilder, works on Windows).
+    // The POSIX version of the system is started by native/posix_launcher.c (./run.sh),
+    // which wires the processes together with pipe()/fork()/dup2()/exec directly.
 
     private static Process coreProcess;
     private static Process loggerProcess;
@@ -78,6 +81,9 @@ public class Launcher {
             ProcessBuilder loggerBuilder = new ProcessBuilder(
                     javaBin, "-cp", classpath, "Main.Logger.LoggerProcess", "--ipc"
             );
+            // Logger diagnostics go straight to this console; an undrained stderr pipe
+            // could fill up and block the Logger (and through it, the Core).
+            loggerBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
             loggerProcess = loggerBuilder.start();
 
             // Pump Logger stdout to launcher console so logs are visible

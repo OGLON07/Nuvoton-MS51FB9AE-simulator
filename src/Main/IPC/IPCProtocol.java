@@ -159,21 +159,19 @@ public final class IPCProtocol {
         sb.append("EXEC=").append(snap.isExecuting() ? 1 : 0).append(',');
         sb.append("CYCLES=").append(snap.getCycleCount()).append(',');
         sb.append("PSIZE=").append(snap.getProgramSize()).append(',');
+        sb.append("ST=").append(escape(snap.getStatus() != null ? snap.getStatus() : "READY")).append(',');
+        if (snap.getLastInstruction() != null) {
+            sb.append("LAST=").append(escape(snap.getLastInstruction())).append(',');
+        }
 
         // Data memory (256 bytes as hex string)
         sb.append("DM=");
-        int[] dm = snap.getDataMemory();
-        for (int b : dm) {
-            sb.append(String.format("%02X", b & 0xFF));
-        }
+        appendHex(sb, snap.getDataMemory());
         sb.append(',');
 
         // Program memory (only loaded portion as hex)
         sb.append("PM=");
-        int[] pm = snap.getProgramMemory();
-        for (int b : pm) {
-            sb.append(String.format("%02X", b & 0xFF));
-        }
+        appendHex(sb, snap.getProgramMemory());
         sb.append(',');
 
         // Stack contents
@@ -265,6 +263,8 @@ public final class IPCProtocol {
                     case "EXEC":   sd.executing = "1".equals(val); break;
                     case "CYCLES": sd.cycleCount = Long.parseLong(val); break;
                     case "PSIZE":  sd.programSize = Integer.parseInt(val); break;
+                    case "ST":     sd.status = unescape(val); break;
+                    case "LAST":   sd.lastInstruction = unescape(val); break;
                     case "DM":     sd.dataMemory = hexToBytes(val); break;
                     case "PM":     sd.programMemory = hexToBytes(val); break;
                     case "STK":    sd.stackContents = colonInts(val); break;
@@ -280,6 +280,16 @@ public final class IPCProtocol {
             }
         }
         return sd;
+    }
+
+    private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+
+    /** Fast hex encoder (String.format per byte cost ~1.8 ms for an 8 KB program). */
+    private static void appendHex(StringBuilder sb, int[] bytes) {
+        sb.ensureCapacity(sb.length() + bytes.length * 2);
+        for (int b : bytes) {
+            sb.append(HEX[(b >> 4) & 0xF]).append(HEX[b & 0xF]);
+        }
     }
 
     private static int[] hexToBytes(String hex) {
@@ -302,7 +312,7 @@ public final class IPCProtocol {
     }
 
     private static String escape(String s) {
-        return s.replace("\\", "\\\\").replace("|", "\\p").replace("\n", "\\n").replace("\r", "\\r");
+        return s.replace("\\", "\\\\").replace("|", "\\p").replace(",", "\\c").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     private static String unescape(String s) {
@@ -311,6 +321,7 @@ public final class IPCProtocol {
             if (s.charAt(i) == '\\' && i + 1 < s.length()) {
                 char next = s.charAt(i + 1);
                 if (next == 'p') { sb.append('|'); i++; }
+                else if (next == 'c') { sb.append(','); i++; }
                 else if (next == 'n') { sb.append('\n'); i++; }
                 else if (next == 'r') { sb.append('\r'); i++; }
                 else if (next == '\\') { sb.append('\\'); i++; }
@@ -356,11 +367,16 @@ public final class IPCProtocol {
         public int queueHead, queueTail, queueCount, queueCapacity;
         public int[] queueContents = new int[0];
         public String lastError;
+        /** Core status word: READY, LOADED, RESET, RUNNING, PAUSED, HALTED. */
+        public String status;
+        /** Description of the last executed instruction, or null. */
+        public String lastInstruction;
 
         /**
          * Returns a status string for UI display.
          */
         public String getStatusString() {
+            if (status != null) return status;
             if (halted) return "HALTED";
             if (executing) return "RUNNING";
             return "READY";

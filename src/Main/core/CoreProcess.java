@@ -222,89 +222,161 @@ public class CoreProcess {
 
     // ==================== IPC Mode ====================
 
+    /** Writes one protocol line atomically (command thread and RUN worker both send). */
+    private static void send(PrintWriter out, String line) {
+        synchronized (out) {
+            out.println(line);
+        }
+    }
+
+    private static void log(PrintWriter out, LogType type, String msg, String details) {
+        synchronized (out) {
+            out.println(new LogMessage(type, msg, details).serialize());
+        }
+    }
+
+    /** Returns the value following {@code flag} in args, or null. */
+    private static String argValue(String[] args, String flag) {
+        for (int i = 0; i < args.length - 1; i++) {
+            if (flag.equals(args[i])) {
+                return args[i + 1];
+            }
+        }
+        return null;
+    }
+
     /**
-     * Runs the Core in IPC mode: reads commands from stdin,
-     * writes responses to stdout, writes log messages to stderr.
-     *
-     * This is the mode used when the Core runs as a child process
-     * spawned by the Launcher via ProcessBuilder.
+     * Runs the Core in IPC mode. File descriptors (set up by the native
+     * POSIX launcher with pipe()/fork()/dup2()/exec):
+     * <pre>
+     *   fd 0 (stdin)  : commands   from the UI process     (pipe read end)
+     *   fd 1 (stdout) : responses  to   the UI process     (pipe write end)
+     *   fd 3          : log lines  to   the Logger process (pipe write end)
+     *   fd 2 (stderr) : diagnostics, left on the terminal
+     * </pre>
+     * {@code --log-fd N} selects the log descriptor; if it is absent
+     * (e.g. when started by the Java fallback launcher) logs go to stderr.
+     * {@code --step-delay-ms N} sets the pause between instructions
+     * during RUN (default keeps the UI animation visible; 0 = full speed).
      */
-    private static void runIPCMode() {
-        // Raw stdout file descriptor for protocol responses to UI
+    private static void runIPCMode(String[] args) {
         PrintWriter responseOut = new PrintWriter(
                 new OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out)), true);
-        PrintWriter logOut = new PrintWriter(
-                new OutputStreamWriter(System.err), true);
 
-        // Redirect standard System.out to System.err so CPU internal prints don't corrupt UI IPC pipe
-        System.setOut(new java.io.PrintStream(System.err, true));
+        String logFd = argValue(args, "--log-fd");
+        PrintWriter logOut;
+        try {
+            java.io.OutputStream logStream = (logFd != null)
+                    ? new java.io.FileOutputStream("/dev/fd/" + logFd)
+                    : System.err;
+            logOut = new PrintWriter(new OutputStreamWriter(logStream), true);
+        } catch (java.io.IOException e) {
+            System.err.println("[Core] Cannot open log descriptor " + logFd + ": " + e.getMessage());
+            logOut = new PrintWriter(new OutputStreamWriter(System.err), true);
+        }
+        final PrintWriter logs = logOut;
+
+        // The Week-3 CPU prints FETCH/DECODE lines to System.out. Those must
+        // never reach the IPC channels, so they are discarded here.
+        System.setOut(new java.io.PrintStream(java.io.OutputStream.nullOutputStream()));
 
         CPU cpu = new CPU();
         CoreCommandHandler handler = new CoreCommandHandler(cpu);
 
-        // Stream continuous execution state snapshots directly to UI
+        String delay = argValue(args, "--step-delay-ms");
+        if (delay != null) {
+            try {
+                handler.setStepDelayMs(Integer.parseInt(delay));
+            } catch (NumberFormatException e) {
+                System.err.println("[Core] Ignoring bad --step-delay-ms: " + delay);
+            }
+        }
+
+        // RUN worker pushes STATE updates; log once when it stops.
         handler.setStateListener(snapshot -> {
-            responseOut.println(IPCProtocol.serializeResponse(CommandResponse.ok(snapshot)));
+            send(responseOut, IPCProtocol.serializeResponse(CommandResponse.ok(snapshot)));
+            if (!snapshot.isExecuting()) {
+                log(logs, snapshot.getLastError() != null ? LogType.ERROR : LogType.EXECUTION,
+                        "RUN stopped: " + snapshot.getStatus(),
+                        "PC=0x" + Integer.toHexString(snapshot.getPC()).toUpperCase()
+                        + " cycles=" + snapshot.getCycleCount()
+                        + (snapshot.getLastError() != null ? " error=" + snapshot.getLastError() : ""));
+            }
         });
 
-        // Send startup log
-        logOut.println(new LogMessage(LogType.SYSTEM, "Core process started").serialize());
+        log(logs, LogType.SYSTEM, "Core process started", "pid=" + ProcessHandle.current().pid());
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(System.in))) {
-
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
 
-                CommandMessage msg = IPCProtocol.deserializeCommand(line);
-
-                if (msg == null) {
-                    // Invalid command
-                    responseOut.println(IPCProtocol.serializeResponse(
-                            CommandResponse.error("Invalid command: " + line)));
-                    logOut.println(new LogMessage(LogType.ERROR,
-                            "Invalid command received: " + line).serialize());
-                    continue;
-                }
-
-                // Log the command
-                logOut.println(new LogMessage(LogType.EXECUTION,
-                        "Command: " + msg.getCommand().name()).serialize());
-
-                // Process the command
-                CommandResponse response = handler.handleCommand(msg);
-
-                // Send response to UI via stdout
-                responseOut.println(IPCProtocol.serializeResponse(response));
-
-                // Log the result
-                if (response.isSuccess()) {
-                    String detail = "";
-                    if (response.getSnapshot() != null) {
-                        CoreStateSnapshot snap = response.getSnapshot();
-                        detail = "PC=0x" + Integer.toHexString(snap.getPC()).toUpperCase()
-                                + " A=0x" + Integer.toHexString(snap.getAccumulator()).toUpperCase()
-                                + " cycles=" + snap.getCycleCount();
+                try {
+                    CommandMessage msg = IPCProtocol.deserializeCommand(line);
+                    if (msg == null) {
+                        send(responseOut, IPCProtocol.serializeResponse(
+                                CommandResponse.error("Invalid command: " + line)));
+                        log(logs, LogType.ERROR, "Invalid command received", line);
+                        continue;
                     }
-                    logOut.println(new LogMessage(LogType.EXECUTION,
-                            msg.getCommand().name() + " completed", detail).serialize());
-                } else {
-                    logOut.println(new LogMessage(LogType.ERROR,
-                            msg.getCommand().name() + " failed: " + response.getErrorMessage()).serialize());
-                }
 
-                // SHUTDOWN terminates the loop
-                if (msg.getCommand() == Command.SHUTDOWN) {
-                    logOut.println(new LogMessage(LogType.SYSTEM,
-                            "Core process shutting down").serialize());
-                    break;
+                    CommandResponse response = handler.handleCommand(msg);
+                    send(responseOut, IPCProtocol.serializeResponse(response));
+                    logCommandResult(logs, msg, response);
+
+                    if (msg.getCommand() == Command.SHUTDOWN) {
+                        break;
+                    }
+                } catch (RuntimeException e) {
+                    // Never let one bad command kill the Core.
+                    send(responseOut, IPCProtocol.serializeResponse(
+                            CommandResponse.error("Internal error: " + e)));
+                    log(logs, LogType.ERROR, "Internal error handling command", String.valueOf(e));
                 }
             }
-        } catch (Exception e) {
-            logOut.println(new LogMessage(LogType.ERROR,
-                    "Core process error: " + e.getMessage()).serialize());
+        } catch (java.io.IOException e) {
+            log(logs, LogType.ERROR, "Core I/O error", String.valueOf(e));
+        } finally {
+            // stdin closed without SHUTDOWN (UI died) or after SHUTDOWN: stop the worker.
+            handler.handleCommand(new CommandMessage(Command.SHUTDOWN));
+            log(logs, LogType.SYSTEM, "Core process shutting down", null);
+            logs.close();           // closes fd 3 -> Logger sees EOF and exits
+        }
+    }
+
+    /** Emits one meaningful log line per command (GET_STATE is not logged: it is polling). */
+    private static void logCommandResult(PrintWriter logs, CommandMessage msg, CommandResponse r) {
+        Command c = msg.getCommand();
+        if (!r.isSuccess()) {
+            log(logs, LogType.ERROR, c.name() + " failed", r.getErrorMessage());
+            return;
+        }
+        CoreStateSnapshot s = r.getSnapshot();
+        switch (c) {
+            case LOAD:
+                log(logs, LogType.EXECUTION, "Program loaded",
+                        (s != null ? s.getProgramSize() : 0) + " bytes");
+                break;
+            case STEP:
+                log(logs, LogType.EXECUTION, "STEP executed",
+                        s.getLastInstruction() + " -> A=0x" + Integer.toHexString(s.getAccumulator()).toUpperCase()
+                        + " cycles=" + s.getCycleCount());
+                break;
+            case RUN:
+                log(logs, LogType.EXECUTION, "RUN started", null);
+                break;
+            case PAUSE:
+                log(logs, LogType.EXECUTION, "PAUSE", "cycles=" + (s != null ? s.getCycleCount() : 0));
+                break;
+            case RESET:
+                log(logs, LogType.EXECUTION, "RESET", null);
+                break;
+            case SHUTDOWN:
+                log(logs, LogType.SYSTEM, "SHUTDOWN received", null);
+                break;
+            default:
+                break;
         }
     }
 
@@ -323,7 +395,7 @@ public class CoreProcess {
     public static void main(String[] args) {
         // Check for IPC mode
         if (args.length > 0 && "--ipc".equals(args[0])) {
-            runIPCMode();
+            runIPCMode(args);
             return;
         }
 

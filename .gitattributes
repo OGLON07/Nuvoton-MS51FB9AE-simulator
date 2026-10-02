@@ -1,0 +1,5 @@
+# Shell scripts and C sources must keep LF endings or they fail under Linux/WSL
+*.sh  text eol=lf
+*.c   text eol=lf
+Makefile text eol=lf
+*.py  text eol=lf
