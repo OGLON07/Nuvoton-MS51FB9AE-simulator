@@ -24,7 +24,6 @@ Thumbs.db
 desktop.ini
 
 # --- Temporary & Log Files ---
-*.log
 *.tmp
 *.bak
 *.swp

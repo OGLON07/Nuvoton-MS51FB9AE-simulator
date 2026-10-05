@@ -1,0 +1,80 @@
+[2026-10-03 00:34:36] [SYSTEM] Logger process started in IPC mode
+[2026-10-03 00:34:36] [SYSTEM] Core process started | pid=20460
+[2026-10-03 00:34:42] [EXECUTION] Program loaded | 5 bytes
+[2026-10-03 00:34:44] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x42 -> A=0x42 cycles=1
+[2026-10-03 00:34:45] [EXECUTION] STEP executed | PC=0x0002 ADD_A_IMM 0x05 -> A=0x47 cycles=2
+[2026-10-03 00:34:45] [EXECUTION] STEP executed | PC=0x0004 HALT 0x00 -> A=0x47 cycles=3
+[2026-10-03 00:34:46] [EXECUTION] Program loaded | 5 bytes
+[2026-10-03 00:34:48] [EXECUTION] RESET
+[2026-10-03 00:34:49] [EXECUTION] Program loaded | 7 bytes
+[2026-10-03 00:34:50] [EXECUTION] RUN started
+[2026-10-03 00:34:51] [EXECUTION] RUN stopped: HALTED | PC=0x7 cycles=5
+[2026-10-03 00:34:53] [EXECUTION] RESET
+[2026-10-03 00:34:55] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 00:34:56] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x00 -> A=0x0 cycles=1
+[2026-10-03 00:34:57] [EXECUTION] RUN started
+[2026-10-03 00:35:00] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-03 00:35:03] [EXECUTION] RESET
+[2026-10-03 00:35:03] [EXECUTION] RESET
+[2026-10-03 00:35:04] [EXECUTION] RESET
+[2026-10-03 00:35:04] [EXECUTION] RESET
+[2026-10-03 00:35:04] [EXECUTION] RESET
+[2026-10-03 00:35:05] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 00:35:07] [EXECUTION] RUN started
+[2026-10-03 00:35:08] [EXECUTION] RUN stopped: LOADED | PC=0x1C cycles=14
+[2026-10-03 00:35:08] [EXECUTION] PAUSE | cycles=14
+[2026-10-03 00:46:53] [SYSTEM] Logger process started in IPC mode
+[2026-10-03 00:46:54] [SYSTEM] Core process started | pid=24024
+[2026-10-03 00:46:57] [EXECUTION] Program loaded | 5 bytes
+[2026-10-03 00:46:59] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x42 -> A=0x42 cycles=1
+[2026-10-03 00:46:59] [EXECUTION] STEP executed | PC=0x0002 ADD_A_IMM 0x05 -> A=0x47 cycles=2
+[2026-10-03 00:47:00] [EXECUTION] STEP executed | PC=0x0004 HALT 0x00 -> A=0x47 cycles=3
+[2026-10-03 00:47:01] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 00:47:02] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x00 -> A=0x0 cycles=1
+[2026-10-03 00:47:04] [EXECUTION] RUN started
+[2026-10-03 00:47:06] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-03 00:47:09] [EXECUTION] Program loaded | 5 bytes
+[2026-10-03 00:47:10] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x42 -> A=0x42 cycles=1
+[2026-10-03 00:47:11] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 00:47:12] [EXECUTION] RUN started
+[2026-10-03 00:47:13] [EXECUTION] RUN stopped: LOADED | PC=0xE cycles=7
+[2026-10-03 00:47:13] [EXECUTION] PAUSE | cycles=7
+[2026-10-03 00:47:14] [EXECUTION] PAUSE | cycles=7
+[2026-10-03 00:47:15] [EXECUTION] RUN started
+[2026-10-03 00:47:16] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-03 09:21:43] [SYSTEM] Logger process started in IPC mode
+[2026-10-03 09:21:43] [SYSTEM] Core process started | pid=10456
+[2026-10-03 09:21:45] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 09:21:47] [EXECUTION] RUN started
+[2026-10-03 09:21:50] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-03 09:41:29] [SYSTEM] Logger process started in IPC mode
+[2026-10-03 09:41:29] [SYSTEM] Core process started | pid=17400
+[2026-10-03 09:41:34] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 09:41:35] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x00 -> A=0x0 cycles=1
+[2026-10-03 09:41:36] [EXECUTION] RUN started
+[2026-10-03 09:41:38] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-03 09:44:18] [SYSTEM] Logger process started in IPC mode
+[2026-10-03 09:44:18] [SYSTEM] Core process started | pid=23804
+[2026-10-03 09:44:21] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 09:44:21] [EXECUTION] RUN started
+[2026-10-03 09:44:24] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-03 09:44:26] [EXECUTION] Program loaded | 39 bytes
+[2026-10-03 09:44:27] [EXECUTION] STEP executed | PC=0x0000 MOV_A_IMM 0x00 -> A=0x0 cycles=1
+[2026-10-03 09:44:27] [EXECUTION] STEP executed | PC=0x0002 MOV_ADDR_A 0x30 -> A=0x0 cycles=2
+[2026-10-03 09:44:28] [EXECUTION] STEP executed | PC=0x0004 MOV_ADDR_A 0x31 -> A=0x0 cycles=3
+[2026-10-03 09:44:28] [EXECUTION] STEP executed | PC=0x0006 MOV_ADDR_A 0x32 -> A=0x0 cycles=4
+[2026-10-03 09:44:28] [EXECUTION] STEP executed | PC=0x0008 MOV_A_IMM 0xAA -> A=0xAA cycles=5
+[2026-10-03 09:44:28] [EXECUTION] STEP executed | PC=0x000A MOV_ADDR_A 0x40 -> A=0xAA cycles=6
+[2026-10-03 09:44:28] [EXECUTION] STEP executed | PC=0x000C MOV_A_IMM 0x01 -> A=0x1 cycles=7
+[2026-10-03 09:44:28] [EXECUTION] STEP executed | PC=0x000E MOV_ADDR_A 0x31 -> A=0x1 cycles=8
+[2026-10-03 09:44:29] [EXECUTION] RESET
+[2026-10-05 19:05:22] [SYSTEM] Logger process started in IPC mode
+[2026-10-05 19:05:22] [SYSTEM] Core process started | pid=9572
+[2026-10-05 19:05:25] [EXECUTION] Program loaded | 7 bytes
+[2026-10-05 19:05:26] [EXECUTION] RUN started
+[2026-10-05 19:05:26] [EXECUTION] RUN stopped: HALTED | PC=0x7 cycles=5
+[2026-10-05 19:05:28] [EXECUTION] Program loaded | 39 bytes
+[2026-10-05 19:05:29] [EXECUTION] RUN started
+[2026-10-05 19:05:31] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
+[2026-10-05 19:05:34] [EXECUTION] RESET
+[2026-10-05 19:05:37] [EXECUTION] Program loaded | 5 bytes
