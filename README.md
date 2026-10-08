@@ -28,12 +28,13 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 * **Student 4:** Preemal Simona Pinto
 
 ## 6. Team Responsibilities
-| Team Member | Primary Role | Secondary Role | Week 2 Responsibilities |
+
+| Team Member | Primary Role | Secondary Role | Week 4 Responsibilities |
 | :--- | :--- | :--- | :--- |
-| Gilon Prince Serrao | CPU Core & Instruction Decoder | Architecture & Repository Lead | Integrating the CPU core, Implementing registers and CPU state, Implementing FETCH → DECODE → EXECUTE flow |
-| asad moidhin | Memory & Stack Management | System Documentation |  Implementing memory functionality, instruction representation and related components |
-| Melbin K Vinod  | Data Structures & Process Control | Unit Testing & QA | team discussions, documenting agenda and decisions, and creating the meeting report.|
-| Preemal Simona Pinto | OS Scheduler & Context Switching | User Interface & Analytics | Developing the simulator UI, Implementing CPU state and execution trace display,UI controls and execution visualization. |
+| Gilon Prince Serrao | Team Leader & Core Process Integration | Architecture & Repository Lead | Integrating the three-process architecture, coordinating UI/Core/Logger integration, implementing and integrating POSIX IPC, maintaining CPU execution and simulator core functionality, and managing repository integration |
+| asad moidhin | Core Process | Memory & Stack Management | Implementing and maintaining CPU execution, program/data memory, stack, queue, and related core-process functionality |
+| Melbin K Vinod | Logger Process | Testing & Documentation | Implementing the Logger Process, handling execution/event logging through IPC, testing logging functionality, and maintaining test documentation |
+| Preemal Simona Pinto | UI Process | User Interface & Analytics | Developing the UI Process, implementing UI controls and execution visualization, displaying CPU/memory state received through IPC, and supporting performance/analytics visualization |
 
 ## 7. Selected Programming Language
 * **Language:** Java
