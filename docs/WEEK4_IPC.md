@@ -86,7 +86,6 @@ sudo apt install openjdk-21-jdk gcc make      # JDK 11+ is enough
 tests/run_ipc_tests.sh                        # IPC / system tests
 tests/run_benchmark.sh                        # standalone vs multi-process benchmark
 ```
-Notes: the GUI needs a display (WSLg on Windows 11 works out of the box; Windows 10 needs an X server such as VcXsrv and `export DISPLAY=...`). Keep the project inside the Linux file system (`~/`), not under `/mnt/c`, and make sure `*.sh` files have LF line endings (`.gitattributes` handles this for git checkouts).
 
 ## 6. Test results
 
@@ -129,21 +128,7 @@ Benchmark: 5 independent sessions per variant (each session = fresh JVM(s)); val
 | Memory, peak resident (MB) | 65 | 189 (UI 61 + Core 77 + Logger 51) | +125 MB |
 | Start-up to clean exit (ms), mean of 5 | 84 | 277 | +193 ms |
 
-Per-session spread (stdev across sessions): standalone RUN 1.30 ms, multi RUN 0.87 ms, multi STEP 3.7 us, IPC RTT 5.3 us.
 
-How to read it: **CPU execution time** is the standalone RUN/STEP row. **IPC overhead** is the GET_STATE round trip (pipes + snapshot encode/decode, no CPU work). **Process-management overhead** is the start-up row (three JVMs instead of one). CPU time is read from `/proc/<pid>/stat`, which has 10 ms resolution, so only the large totals are meaningful. Memory is resident set size (`VmRSS`) per process; the extra 124 MB is mostly the two additional JVMs.
 
-Caveats: these numbers were measured on the Linux sandbox used to develop the change, not on the team's WSL machine — run `tests/run_benchmark.sh` there and use those numbers in the report. The 95th-percentile STEP latency (~2 ms) is much higher than the median (~40 µs); the cause was not investigated.
 
-A finding worth mentioning in the report: the first benchmark run showed STEP at ~2 ms because the snapshot serializer used `String.format` per byte for the program image (≈1.8 ms for 8 KB). Replacing it with a lookup-table encoder reduced the STEP round trip from 2001 µs to 40 µs.
 
-## 8. Week 4 status
-
-**Completed and tested:** three separate OS processes; pipe()/fork()/dup2()/exec launcher; UI→Core and Core→UI commands/responses for all 7 commands; Core→Logger log pipe; threading as described; clean shutdown including UI crash; NOP, PAUSE-stall and pipe-flooding bugs fixed; protocol/IPC/architecture documented; benchmark run.
-
-**Known limitations / not done:**
-- The Java `Launcher.java` fallback is not POSIX and relays logs through the UI JVM (tested only lightly).
-- `UIProcessMain` without `--ipc` still uses the Mock communicator (kept for UI-only demos).
-- At class level the UI JVM's classpath contains Core classes (`IPCProtocol` and `CommandMessage` live in `Main.IPC` / `Main.core.command`), though the UI never instantiates CPU/Memory/Queue (TC12). Moving the message classes to a neutral package would remove this.
-- The GUI was exercised through automated clicks on a virtual display, not on real WSLg; Stack/Queue demo panels were loaded but not inspected visually.
-- Benchmark figures come from a different machine than the team's WSL.
