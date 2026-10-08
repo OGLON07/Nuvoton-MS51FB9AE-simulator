@@ -165,9 +165,9 @@ case 0xD0:
                 break;
             }
 
-           case 0x00: // NOP (No Operation)
-    registers.setPC(registers.getPC() + 1);
-    break;
+            case 0x00: // NOP - fetch() already advanced the PC
+                decodedInstruction = new Instruction(Opcode.NOP, 0);
+                break;
 
         case 0xFF: // HALT
             this.halted = true;

@@ -1,0 +1,111 @@
+# Weekly Status Update - Week 4
+
+## Planned Work:
+
+- Separate the existing simulator into UI, Core, and Logging processes.
+- Implement communication between the processes using a suitable POSIX IPC mechanism.
+- Maintain the existing CPU, Memory, Stack, and Queue functionality within the Core process.
+- Preserve the existing simulator UI and execution controls after process separation.
+- Implement the independent Logger process.
+- Define and document the inter-process communication protocol.
+- Add IPC test cases and verify process communication.
+- Compare standalone and multi-process simulator performance.
+- Update the project documentation for the Week 4 architecture.
+
+## Completed Work:
+
+- Separated the simulator into three independent processes: UI, Core, and Logger.
+- Integrated the existing CPU, Memory, Stack, and Queue components into the Core process.
+- Maintained the existing Swing-based UI and simulator controls in the UI process.
+- Implemented the Logger process for execution and error logging.
+- Selected anonymous POSIX pipes as the IPC mechanism.
+- Implemented the native POSIX launcher using `pipe()`, `fork()`, `dup2()`, and `exec()`.
+- Implemented UI-to-Core command communication and Core-to-UI response communication.
+- Implemented Core-to-Logger logging communication.
+- Added clean shutdown and process supervision.
+- Added IPC architecture and protocol documentation.
+
+## Pending Work:
+
+- Further improve portability and setup for fresh team machines.
+- Verify the project setup and execution process across all team systems.
+- Perform additional performance testing if required.
+
+## Issues Encountered:
+
+- Separating the simulator required changes to the existing UI and Core architecture.
+- POSIX IPC required integration of a native launcher with the Java components.
+- Multi-process execution introduced additional IPC, CPU, memory, and startup overhead compared with the standalone simulator.
+- Fresh-machine setup requires the appropriate Java, compiler, and POSIX environment.
+
+## Decisions Made:
+
+- Use three independent processes: UI, Core, and Logger.
+- Keep CPU, Memory, Stack, and Queue functionality inside the Core process.
+- Use anonymous POSIX pipes for communication between processes.
+- Use text-based messages for commands, responses, and logging.
+- Keep the UI responsible only for user interaction and display.
+- Keep the Logger independent from CPU execution and UI functionality.
+- Use a native POSIX launcher to create and connect the three processes.
+- Maintain the existing simulator functionality and UI while changing the underlying process architecture.
+
+## Individual Contributions:
+
+### Gilon Prince Serrao — Team Leader / Integration
+
+- Integrated the UI, Core, and Logger components.
+- Implemented and integrated the POSIX process launcher.
+- Integrated the three-process IPC architecture.
+- Resolved IPC and interface integration issues.
+- Performed system-level testing and integration.
+- Added and reviewed build, run, IPC testing, and benchmarking workflows.
+- Coordinated the final Week 4 integration and documentation.
+
+### Asad Moidhin — Core Process
+
+- Worked on the Core process and its separation from the UI.
+- Integrated CPU, Memory, Stack, and Queue functionality into the Core process.
+- Worked on Core command handling and simulator state communication.
+- Supported Core-side IPC integration and testing.
+
+### Melbin K Vinod — Logger Process
+
+- Implemented and developed the independent Logger process.
+- Added execution and error logging functionality.
+- Worked on log message handling and Logger-side integration.
+- Supported logging-related IPC testing.
+
+### Preemal Simona Pinto — UI Process
+
+- Developed the independent UI process.
+- Maintained the Swing interface and simulator controls after process separation.
+- Implemented UI-side communication with the Core process.
+- Maintained CPU state and execution information displayed through the UI.
+- Supported UI and IPC testing.
+
+## Work Accepted:
+
+- Three-process simulator is working correctly.
+- UI, Core, and Logger operate as separate processes.
+- Existing UI controls and simulator functionality continue to work.
+- UI communicates with the Core through IPC.
+- Core communicates execution and error information to the Logger.
+- POSIX pipe-based communication is functional.
+- IPC test cases have been completed successfully.
+- Standalone and multi-process benchmark results have been obtained.
+- Week 4 architecture and integration have been accepted as the project baseline.
+
+## Work Carried Forward:
+
+- Improve portability and fresh-machine setup.
+- Verify the project on all team members' systems.
+- Continue performance analysis and optimization where required.
+- Refine project documentation and setup instructions.
+- Maintain process separation while implementing future simulator features.
+
+## Week 5 Plan:
+
+- Review the completed Week 4 architecture and integration.
+- Complete any remaining portability and setup improvements.
+- Extend the simulator while maintaining the UI, Core, and Logger process separation.
+- Continue integration testing and regression testing.

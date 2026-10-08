@@ -24,7 +24,10 @@ Thumbs.db
 desktop.ini
 
 # --- Temporary & Log Files ---
-*.log
 *.tmp
 *.bak
 *.swp
+
+# --- Week 4 build/test artefacts ---
+out/
+benchmark/*.txt
