@@ -1,0 +1,65 @@
+# Week 4 Decisions
+
+## Completed Work:
+
+- Separated the simulator into three independent processes: UI, Core, and Logger.
+- Implemented the Core process to handle CPU execution, Memory, Stack, Queue, and simulator state.
+- Implemented the independent UI process with the existing simulator controls and display panels.
+- Implemented the independent Logger process for execution and error logging.
+- Implemented POSIX IPC using anonymous pipes with `pipe()`, `fork()`, `dup2()`, and `exec()`.
+- Defined communication between UI and Core using command and response messages.
+- Implemented Core-to-Logger communication for execution and error logs.
+- Added process supervision and clean shutdown handling.
+- Added IPC architecture and message protocol documentation.
+- Added Week 4 IPC and multi-process test cases.
+- Added standalone versus multi-process benchmark measurements.
+- Updated the project build and run scripts for the three-process architecture.
+
+## Work Tested:
+
+- UI-to-Core STEP communication.
+- RESET operation through IPC.
+- Program LOAD through IPC.
+- RUN execution until HALT.
+- PAUSE during execution.
+- Execution logging.
+- Error logging.
+- Clean shutdown of all three processes.
+- Process separation and IPC pipe connections.
+- Source-level separation between UI, Core, and Logger.
+- Standalone versus multi-process performance measurements.
+
+## Work Accepted:
+
+- Three-process simulator is working correctly.
+- Existing UI and simulator controls continue to function after process separation.
+- CPU, Memory, Stack, and Queue remain under the Core process.
+- UI communicates with the Core through IPC instead of directly executing Core functionality.
+- Logger operates independently and receives logs from the Core process.
+- POSIX pipe-based IPC is functional.
+- IPC test suite completed successfully.
+
+## Work Not Completed:
+
+- Additional performance optimization of the multi-process implementation.
+- Additional benchmarking under different system configurations.
+
+## Issues:
+
+- Multi-process execution requires a POSIX-compatible environment for the native POSIX launcher.
+- Build and execution depend on the required Java, compiler, and system utilities being available on the development machine.
+- The project contains both Java and native components, so setup must be handled carefully on a fresh machine.
+- Multi-process execution uses more CPU time and memory than the standalone implementation.
+
+## Concerns:
+
+- The project should remain easy for all team members to build and run after cloning the repository.
+- The POSIX environment and required dependencies should be clearly documented.
+- Future modifications must maintain the separation between UI, Core, and Logger responsibilities.
+- Additional features should not introduce direct dependencies between the UI and Core components.
+
+## Work carrying forward to week 5:
+
+- Improve project portability and fresh-machine setup.
+- Verify the build and execution process on all team members' systems.
+- Continue performance analysis and optimization where required.
