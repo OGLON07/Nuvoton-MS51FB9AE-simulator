@@ -188,22 +188,76 @@ public class IPCCoreCommunicator implements CoreCommunicator {
 
     // ==================== Demo programs ====================
 
-    /** Basic demo: MOV A,#0x42, ADD A,#0x05, HALT */
-    private int[] getDefaultDemoProgram() {
-        return new int[]{ 0x74, 0x42, 0x24, 0x05, 0xFF };
+    /**
+     * Default LOAD program (27 instructions). Uses every non-stack instruction and
+     * changes every value in the CPU STATE panel (A, B, R0-R7, PSW, CY, AC, OV, PC)
+     * plus data memory:
+     *
+     *   MOV A,#0x0F ; MOV R0..R7,#imm          -> R0-R7 = 01 02 03 05 08 0D 15 22
+     *   ADD A,#0x01     A=10  AC=1             (carry out of bit 3)
+     *   ADD A,#0xF0     A=00  CY=1             (carry out of bit 7)
+     *   MOV A,#0x50 ; ADD A,#0x50  A=A0 OV=1   (signed overflow)
+     *   SUBB A,#0xB0    A=F0  CY=1             (borrow)
+     *   MOV A,#0x20 ; MOV B,#0x10 ; MUL AB     A=00 B=02 OV=1 (0x20*0x10=0x200)
+     *   MOV A,#0x3C ; ANL A,#0x0F ; INC A ; DEC A      A=0C
+     *   MOV 0x30,A ; MOV A,#0 ; MOV A,0x30     RAM[0x30]=0C, A=0C again
+     *   NOP ; SJMP +2 (skips the dead MOV A,#0xFF) ; HALT
+     */
+    public static int[] getDefaultDemoProgram() {
+        return new int[]{
+            0x74, 0x0F,             // MOV A,#0x0F
+            0x78, 0x01,             // MOV R0,#0x01
+            0x79, 0x02,             // MOV R1,#0x02
+            0x7A, 0x03,             // MOV R2,#0x03
+            0x7B, 0x05,             // MOV R3,#0x05
+            0x7C, 0x08,             // MOV R4,#0x08
+            0x7D, 0x0D,             // MOV R5,#0x0D
+            0x7E, 0x15,             // MOV R6,#0x15
+            0x7F, 0x22,             // MOV R7,#0x22
+            0x24, 0x01,             // ADD A,#0x01      -> A=0x10, AC=1
+            0x24, 0xF0,             // ADD A,#0xF0      -> A=0x00, CY=1
+            0x74, 0x50,             // MOV A,#0x50
+            0x24, 0x50,             // ADD A,#0x50      -> A=0xA0, OV=1
+            0x94, 0xB0,             // SUBB A,#0xB0     -> A=0xF0, CY=1 (borrow)
+            0x74, 0x20,             // MOV A,#0x20
+            0x75, 0xF0, 0x10,       // MOV B,#0x10
+            0xA4,                   // MUL AB           -> A=0x00, B=0x02, OV=1
+            0x74, 0x3C,             // MOV A,#0x3C
+            0x54, 0x0F,             // ANL A,#0x0F      -> A=0x0C
+            0x04,                   // INC A            -> 0x0D
+            0x14,                   // DEC A            -> 0x0C
+            0xF5, 0x30,             // MOV 0x30,A       -> RAM[0x30]=0x0C
+            0x74, 0x00,             // MOV A,#0x00
+            0xE5, 0x30,             // MOV A,0x30       -> A=0x0C (read back from RAM)
+            0x00,                   // NOP
+            0x80, 0x02,             // SJMP +2          (skips the next instruction)
+            0x74, 0xFF,             // MOV A,#0xFF      (dead code - proves the jump worked)
+            0xFF                    // HALT
+        };
     }
 
     /**
-     * Stack demo: MOV A,#0x42, PUSH A, MOV A,#0x00, POP A, HALT
+     * Stack demo: two PUSHes, an ADD that sets CY/AC, a register write, then two POPs
+     * (LIFO order: 0xFF comes back first, then 0x42).
      */
-    private int[] getStackDemoProgram() {
-        return new int[]{ 0x74, 0x42, 0xC0, 0x74, 0x00, 0xD0, 0xFF };
+    public static int[] getStackDemoProgram() {
+        return new int[]{
+            0x74, 0x42,             // MOV A,#0x42
+            0xC0,                   // PUSH A           SP=08, RAM[08]=42
+            0x74, 0xFF,             // MOV A,#0xFF
+            0xC0,                   // PUSH A           SP=09, RAM[09]=FF
+            0x24, 0x01,             // ADD A,#0x01      A=00, CY=1, AC=1 (PSW=C0)
+            0x78, 0x09,             // MOV R0,#0x09     R0 remembers SP after two pushes
+            0xD0,                   // POP A            A=FF, SP=08
+            0xD0,                   // POP A            A=42, SP=07
+            0xFF                    // HALT
+        };
     }
 
     /**
      * Queue demo: Initialize queue metadata and enqueue three values.
      */
-    private int[] getQueueDemoProgram() {
+    public static int[] getQueueDemoProgram() {
         return new int[]{
             // Init: head=0, tail=0, count=0
             0x74, 0x00, 0xF5, 0x30, 0xF5, 0x31, 0xF5, 0x32,
@@ -216,6 +270,9 @@ public class IPCCoreCommunicator implements CoreCommunicator {
             // Enqueue 0xCC at buffer[2]
             0x74, 0xCC, 0xF5, 0x42,
             0x74, 0x03, 0xF5, 0x31, 0xF5, 0x32,
+            // Registers mirror the queue state
+            0x78, 0x03,             // MOV R0,#0x03     R0 = number of items enqueued
+            0x79, 0x40,             // MOV R1,#0x40     R1 = buffer base address
             // HALT
             0xFF
         };

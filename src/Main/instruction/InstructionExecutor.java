@@ -47,18 +47,45 @@ public class InstructionExecutor {
                 registers.setR(instruction.getRegisterIndex(), instruction.getOperand() & 0xFF);
                 break;
 
-            case ADD_A_IMM:
-                registers.setAccumulator((registers.getAccumulator() + instruction.getOperand()) & 0xFF);
+            case MOV_B_IMM:
+                registers.setB(instruction.getOperand() & 0xFF);
                 break;
 
-            case SUBB_A_IMM:
-                registers.setAccumulator((registers.getAccumulator() - instruction.getOperand()) & 0xFF);
+            case ADD_A_IMM: {
+                int a   = registers.getAccumulator();
+                int imm = instruction.getOperand() & 0xFF;
+                int sum = a + imm;
+                boolean carry     = sum > 0xFF;                          // carry out of bit 7
+                boolean auxCarry  = ((a & 0x0F) + (imm & 0x0F)) > 0x0F;  // carry out of bit 3
+                boolean carryInto7 = ((a & 0x7F) + (imm & 0x7F)) > 0x7F; // carry out of bit 6
+                registers.setAccumulator(sum & 0xFF);
+                registers.setCarry(carry);
+                registers.setAuxiliaryCarry(auxCarry);
+                registers.setOverflow(carry != carryInto7);              // signed overflow
                 break;
+            }
+
+            case SUBB_A_IMM: {
+                // Simplified SUBB: A = A - data (the incoming carry is not subtracted).
+                // CY = borrow, AC = borrow from bit 3, OV = signed overflow.
+                int a   = registers.getAccumulator();
+                int imm = instruction.getOperand() & 0xFF;
+                boolean borrow      = a < imm;
+                boolean auxBorrow   = (a & 0x0F) < (imm & 0x0F);
+                boolean borrowFrom6 = (a & 0x7F) < (imm & 0x7F);
+                registers.setAccumulator((a - imm) & 0xFF);
+                registers.setCarry(borrow);
+                registers.setAuxiliaryCarry(auxBorrow);
+                registers.setOverflow(borrow != borrowFrom6);
+                break;
+            }
 
             case MUL_AB: {
                 int result = registers.getAccumulator() * registers.getB();
                 registers.setAccumulator(result & 0xFF);        // Low byte
                 registers.setB((result >> 8) & 0xFF);           // High byte
+                registers.setCarry(false);                      // MUL always clears CY
+                registers.setOverflow(result > 0xFF);           // OV = result does not fit in A
                 break;
             }
 

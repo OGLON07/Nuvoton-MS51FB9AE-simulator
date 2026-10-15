@@ -56,6 +56,18 @@ public class UiScriptClient {
         else    { failed++; System.err.println("  FAIL  " + id + "  " + what + "  -> " + detail); }
     }
 
+    /** LOADs a program, RUNs it and returns the final HALTED state (null on timeout). */
+    private static IPCProtocol.SnapshotData runDemo(int[] program) throws InterruptedException {
+        StringBuilder sb = new StringBuilder("CMD|LOAD|");
+        for (int i = 0; i < program.length; i++) sb.append(i == 0 ? "" : ",").append(program[i]);
+        drain();
+        send(sb.toString());
+        await(UiScriptClient::isState, 3000);
+        send("CMD|RUN");
+        String done = await(x -> isState(x) && x.contains("HALTED=1"), 5000);
+        return done == null ? null : snap(done);
+    }
+
     private static void drain() throws InterruptedException {
         while (inbox.poll(150, TimeUnit.MILLISECONDS) != null) { /* discard stale pushes */ }
     }
@@ -199,6 +211,25 @@ public class UiScriptClient {
         long uiPid = ProcessHandle.current().pid();
         check("TC07", "4 invalid commands -> 4 ERROR replies; Core still answers & process alive",
               allErr && l != null && Files.exists(Paths.get("/proc/" + corePid)), String.valueOf(l));
+
+        // ---- TC14-16: the three real UI demo programs, run to HALT through the pipes
+        IPCProtocol.SnapshotData d = runDemo(Main.UI.IPCCoreCommunicator.getDefaultDemoProgram());
+        check("TC14", "LOAD demo: R0-R7=01 02 03 05 08 0D 15 22, B=02, A=0C, PSW=04 (OV), RAM[30]=0C, 27 cycles",
+              d != null && Arrays.equals(d.r, new int[]{1, 2, 3, 5, 8, 0x0D, 0x15, 0x22}) && d.b == 2 && d.acc == 0x0C
+                && d.psw == 0x04 && d.ov && !d.cy && !d.ac && d.dataMemory[0x30] == 0x0C && d.cycleCount == 27,
+              d == null ? "no HALTED state" : "r=" + Arrays.toString(d.r) + " b=" + d.b + " a=" + d.acc + " psw=" + d.psw + " cyc=" + d.cycleCount);
+
+        d = runDemo(Main.UI.IPCCoreCommunicator.getStackDemoProgram());
+        check("TC15", "STACK demo: LIFO pop gives A=42, SP=07, R0=09, CY=1, AC=1 (PSW=C0), stack bytes 42 FF in RAM",
+              d != null && d.acc == 0x42 && d.sp == 7 && d.r[0] == 9 && d.cy && d.ac && d.psw == 0xC0
+                && d.dataMemory[8] == 0x42 && d.dataMemory[9] == 0xFF,
+              d == null ? "no HALTED state" : "a=" + d.acc + " sp=" + d.sp + " r0=" + d.r[0] + " psw=" + d.psw);
+
+        d = runDemo(Main.UI.IPCCoreCommunicator.getQueueDemoProgram());
+        check("TC16", "QUEUE demo: 3 items AA BB CC enqueued, count=3, R0=03, R1=40",
+              d != null && d.queueCount == 3 && d.r[0] == 3 && d.r[1] == 0x40
+                && d.dataMemory[0x40] == 0xAA && d.dataMemory[0x41] == 0xBB && d.dataMemory[0x42] == 0xCC,
+              d == null ? "no HALTED state" : "count=" + d.queueCount + " r0=" + d.r[0] + " r1=" + d.r[1]);
 
         // ---- TC11: processes are separate and joined only by pipes
         boolean distinct = uiPid != corePid && corePid != loggerPid && uiPid != loggerPid;

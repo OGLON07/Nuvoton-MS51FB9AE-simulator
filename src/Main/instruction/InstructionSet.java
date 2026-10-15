@@ -48,6 +48,17 @@ public class InstructionSet {
         );
     }
 
+    // MOV B,#data
+    public static Instruction movBImmediate(int value) {
+
+        checkByte(value);
+
+        return new Instruction(
+                Opcode.MOV_B_IMM,
+                value
+        );
+    }
+
     // ADD A,#data
     public static Instruction addAImmediate(int value) {
 

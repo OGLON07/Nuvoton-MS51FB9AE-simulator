@@ -6,6 +6,7 @@ public enum Opcode {
     MOV_A_ADDR(0xE5),
     MOV_ADDR_A(0xF5),
     MOV_RN_IMM(0x78),
+    MOV_B_IMM(0x75),      // MOV B,#data  (8051 encoding: 75 F0 data)
 
     ADD_A_IMM(0x24),
     SUBB_A_IMM(0x94),

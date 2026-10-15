@@ -513,6 +513,25 @@ public class SimulatorUI extends JFrame {
                     }
                     break;
 
+                case 0x00: // NOP
+                    hexBytes = String.format("%02X", opcode);
+                    mnemonic = "NOP";
+                    nextI = i + 1;
+                    break;
+
+                case 0x75: // MOV B,#data  (75 F0 data)
+                    if (i + 2 < programMemory.length && (programMemory[i + 1] & 0xFF) == 0xF0) {
+                        int imm = programMemory[i + 2] & 0xFF;
+                        hexBytes = String.format("%02X %02X %02X", opcode, programMemory[i + 1] & 0xFF, imm);
+                        mnemonic = String.format("MOV B,#0x%02X", imm);
+                        nextI = i + 3;
+                    } else {
+                        hexBytes = String.format("%02X", opcode);
+                        mnemonic = String.format("DB 0x%02X", opcode);
+                        nextI = i + 1;
+                    }
+                    break;
+
                 case 0x80: // SJMP rel
                     if (i + 1 < programMemory.length) {
                         int rel = (byte) programMemory[i + 1];
@@ -584,7 +603,7 @@ public class SimulatorUI extends JFrame {
             }
 
             String marker = (addr == currentPC) ? "  <-- PC" : "";
-            sb.append(String.format("0x%04X:  %-7s  %-16s%s\n", addr, hexBytes, mnemonic, marker));
+            sb.append(String.format("0x%04X:  %-9s %-16s%s\n", addr, hexBytes, mnemonic, marker));
             i = nextI;
         }
 

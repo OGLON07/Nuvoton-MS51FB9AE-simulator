@@ -72,6 +72,20 @@ public class CPU {
                 break;
             }
 
+            // MOV B,#data  (8051 encodes it as MOV direct,#data with direct = 0xF0 (B))
+            case 0x75: {
+                int directAddr = memory.readProgram(registers.getPC());
+                int data       = memory.readProgram(registers.getPC() + 1);
+                registers.setPC(registers.getPC() + 2);
+                if (directAddr != 0xF0) {
+                    throw new UnsupportedOperationException(
+                            "MOV direct,#data is only supported for B (0xF0), got 0x"
+                            + Integer.toHexString(directAddr).toUpperCase());
+                }
+                decodedInstruction = new Instruction(Opcode.MOV_B_IMM, data);
+                break;
+            }
+
             // MOV Rn,#data
             case 0x78:
             case 0x79:

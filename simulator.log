@@ -78,3 +78,46 @@
 [2026-10-05 19:05:31] [EXECUTION] RUN stopped: HALTED | PC=0x27 cycles=20
 [2026-10-05 19:05:34] [EXECUTION] RESET
 [2026-10-05 19:05:37] [EXECUTION] Program loaded | 5 bytes
+[2026-10-16 01:05:14] [SYSTEM] Logger process started in IPC mode
+[2026-10-16 01:05:14] [SYSTEM] Core process started | pid=24464
+[2026-10-16 01:05:19] [EXECUTION] Program loaded | 52 bytes
+[2026-10-16 01:05:20] [EXECUTION] RUN started
+[2026-10-16 01:05:24] [EXECUTION] RUN stopped: HALTED | PC=0x34 cycles=27
+[2026-10-16 01:05:26] [EXECUTION] RESET
+[2026-10-16 01:05:27] [EXECUTION] Program loaded | 13 bytes
+[2026-10-16 01:05:29] [EXECUTION] RUN started
+[2026-10-16 01:05:30] [EXECUTION] RUN stopped: HALTED | PC=0xD cycles=9
+[2026-10-16 01:05:32] [EXECUTION] RESET
+[2026-10-16 01:05:33] [EXECUTION] Program loaded | 43 bytes
+[2026-10-16 01:05:35] [EXECUTION] RUN started
+[2026-10-16 01:05:37] [EXECUTION] RUN stopped: HALTED | PC=0x2B cycles=22
+[2026-10-15 19:36:29] [SYSTEM] Logger process started in IPC mode
+[2026-10-15 19:36:29] [SYSTEM] Core process started | pid=435
+[2026-10-15 19:36:36] [EXECUTION] Program loaded | 52 bytes
+[2026-10-15 19:36:38] [EXECUTION] RUN started
+[2026-10-15 19:36:42] [EXECUTION] RUN stopped: HALTED | PC=0x34 cycles=27
+[2026-10-15 19:36:43] [EXECUTION] Program loaded | 13 bytes
+[2026-10-15 19:36:45] [EXECUTION] RUN started
+[2026-10-15 19:36:46] [EXECUTION] RUN stopped: HALTED | PC=0xD cycles=9
+[2026-10-15 19:36:48] [EXECUTION] Program loaded | 43 bytes
+[2026-10-15 19:36:49] [EXECUTION] RUN started
+[2026-10-15 19:36:52] [EXECUTION] RUN stopped: HALTED | PC=0x2B cycles=22
+[2026-10-15 19:36:58] [EXECUTION] Program loaded | 13 bytes
+[2026-10-15 19:36:59] [EXECUTION] RUN started
+[2026-10-15 19:37:00] [EXECUTION] RUN stopped: HALTED | PC=0xD cycles=9
+[2026-10-15 19:37:04] [ERROR] RUN failed | CPU is halted — RESET first
+[2026-10-15 19:37:06] [EXECUTION] Program loaded | 43 bytes
+[2026-10-15 19:37:08] [EXECUTION] RUN started
+[2026-10-15 19:37:10] [EXECUTION] RUN stopped: HALTED | PC=0x2B cycles=22
+[2026-10-15 19:37:12] [EXECUTION] RESET
+[2026-10-15 19:37:14] [EXECUTION] RUN started
+[2026-10-15 19:37:16] [EXECUTION] RUN stopped: HALTED | PC=0x2B cycles=22
+[2026-10-15 19:37:17] [ERROR] RUN failed | CPU is halted — RESET first
+[2026-10-15 19:37:19] [ERROR] RUN failed | CPU is halted — RESET first
+[2026-10-15 19:37:19] [ERROR] RUN failed | CPU is halted — RESET first
+[2026-10-15 19:37:21] [EXECUTION] RESET
+[2026-10-15 19:37:23] [EXECUTION] Program loaded | 52 bytes
+[2026-10-15 19:37:25] [EXECUTION] RUN started
+[2026-10-15 19:37:29] [EXECUTION] RUN stopped: HALTED | PC=0x34 cycles=27
+[2026-10-15 19:37:31] [SYSTEM] SHUTDOWN received
+[2026-10-15 19:37:31] [SYSTEM] Core process shutting down
