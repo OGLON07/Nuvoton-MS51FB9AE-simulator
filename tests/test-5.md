@@ -19,4 +19,3 @@ Result of the last run: **37 / 37 checks passed**. Full table with expected/actu
 | TC12 | UI/Core/Logger source separation rules | PASS |
 | TC13 | NOP regression | PASS |
 
-Note: the older `tests/IPCTest.java` uses Java `assert` and only checks anything when run with `java -ea`.

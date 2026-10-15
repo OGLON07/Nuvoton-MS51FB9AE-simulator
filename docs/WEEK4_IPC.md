@@ -2,19 +2,7 @@
 
 ## 1. Architecture
 
-```
-                     native/posix_launcher.c   (C: pipe() + fork() + dup2() + exec)
-                      creates the pipes, starts the 3 processes, supervises them
-                                         |
-        +--------------------------------+--------------------------------+
-        v                                v                                v
- +--------------+   pipe ui_to_core   +----------------+   pipe core_to_log   +----------------+
- |  UI PROCESS  | ------------------> |  CORE PROCESS  | -------------------> | LOGGER PROCESS |
- | Swing GUI    |   fd1  ->  fd0      | command loop   |   fd3  ->  fd0       | log queue +    |
- | buttons,     | <------------------ | CPU, Memory,   |                      | log file       |
- | panels       |   pipe core_to_ui   | Stack, Queue   |                      | simulator.log  |
- +--------------+   fd0  <-  fd1      +----------------+                      +----------------+
-```
+![Nuvoton MS51FB9AE Simulator Architecture](../images/IPC_Architecture.png)
 
 | Process | Java entry point | Owns | Must NOT |
 |---|---|---|---|
