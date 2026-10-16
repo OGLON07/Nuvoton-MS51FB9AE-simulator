@@ -18,7 +18,7 @@ The three processes are connected **only** by the three anonymous pipes above (v
 
 **Selected: anonymous POSIX pipes, created with `pipe()`, inherited through `fork()`, wired onto file descriptors with `dup2()`, and the JVMs started with `execvp()`.** This is done in `native/posix_launcher.c` (about 250 lines). The Java programs just read/write their own file descriptors (stdin/stdout, plus fd 3 for the Core's log pipe, opened through `/dev/fd/3`).
 
-Honest note: Java cannot call `pipe()/fork()/dup2()` itself without JNI or the (preview in Java 21) FFM API. The C launcher is what makes this genuine POSIX IPC. The older `Launcher.java` (Java `ProcessBuilder`) is kept only as a portable fallback for machines without Ubuntu/WSL; it is OS pipes too, but it is **not** the POSIX launcher and it relays Core→Logger through the UI JVM.
+Java cannot call `pipe()/fork()/dup2()` itself. The C launcher is what makes this genuine POSIX IPC. The older `Launcher.java` (Java `ProcessBuilder`) is kept only as a portable fallback for machines without Ubuntu/WSL; it is OS pipes too, but it is **not** the POSIX launcher and it relays Core→Logger through the UI JVM.
 
 Why pipes:
 - Exactly the three relationships we have are one-directional streams: commands, responses, log lines. A pipe is the simplest POSIX primitive for that.
