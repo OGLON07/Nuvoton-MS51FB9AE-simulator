@@ -53,5 +53,3 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 
 ## 10. Week 4: Three-Process Simulator (UI / Core / Logger over POSIX pipes)
 See [docs/WEEK4_IPC.md](docs/WEEK4_IPC.md) for architecture, IPC justification, protocol, thread model, test results and benchmark.
-
-Quick start on Ubuntu/WSL: `sudo apt install openjdk-21-jdk gcc make`, then `./build.sh`, `./run.sh`, `tests/run_ipc_tests.sh`.
