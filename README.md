@@ -57,4 +57,3 @@ The PROGRAM panel accepts editable assembly source. The **HAMMING DEMO** button 
 
 When the Hamming program reaches HALT, the Core forwards the result produced by the assembly routine through the existing Logger process. Hamming results are written to `ErrorDetection.log`; normal simulator events remain in `simulator.log`.
 
-**Scope note:** the current Hamming example checks its own codeword stored in data RAM. It does not yet scan every loaded program-memory instruction byte. See `docs/WEEK5_HAMMING_IMPLEMENTATION.md` and `docs/WEEK5_OBSERVATION_REPORT.md` for the exact scope, expected values, verification evidence and remaining limitations.
