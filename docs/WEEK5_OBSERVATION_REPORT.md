@@ -1,22 +1,20 @@
-# Week 5 Observation Report
+# Week 5 Observation and Error Analysis Report
 
-## Section 1: Scope of Review
+## 1. Scope of Review
 
-This review covers the Week 5 editable assembly editor, the Hamming (7,4)
-demonstration, and the simulator backend paths used by the demonstration:
+This Week 5 review covers:
 
-- Hamming source and documentation in `DemoPrograms.java` and
-  `WEEK5_HAMMING_IMPLEMENTATION.md`.
-- CPU execution, arithmetic flags, relative branches, stack behavior, and
-  instruction decoding.
-- Queue metadata observation and IPC command/snapshot framing.
+- The editable assembly editor and two-pass assembler.
+- The Hamming (7,4) assembly demonstration.
+- The existing Core-to-Logger POSIX pipe.
+- Dedicated Hamming result logging in `ErrorDetection.log`.
+- Selected CPU, queue and IPC implementation observations.
 
-The review separates the controlled Hamming demonstration from defects in the
-general simulator implementation.
+The Hamming parity and syndrome calculations are implemented in assembly. Core coordinates the verification runs, reads the assembly-produced syndrome values, identifies instruction boundaries in the assembled byte stream, and sends the results to the existing Logger process. Java does not calculate Hamming parity or syndrome.
 
-## Section 2: Hamming (7,4) Verification
+## 2. Hamming (7,4) Algorithm Verification
 
-The demonstration uses input nibble `0x0B`, whose data bits are:
+The demonstration uses input nibble `0x0B` and even parity.
 
 | Data bit | Value |
 |---|---:|
@@ -25,96 +23,91 @@ The demonstration uses input nibble `0x0B`, whose data bits are:
 | D3 | 0 |
 | D4 | 1 |
 
-For even parity:
+Parity calculations:
 
 - `P1 = D1 XOR D2 XOR D4 = 1`
 - `P2 = D1 XOR D3 XOR D4 = 0`
 - `P4 = D2 XOR D3 XOR D4 = 0`
 
-Using the seven-bit layout `P1, P2, D1, P4, D2, D3, D4` gives
-`1 0 1 0 1 0 1`, or **`0x55`**. With no injected error, the three syndrome
-bits are all zero and the combined syndrome is `0`.
+The codeword layout `P1, P2, D1, P4, D2, D3, D4` produces `1010101` (`0x55`). The checked sample produces syndrome `000`, meaning no error was detected in this codeword.
 
-The correction jump table maps syndrome values 1 through 7 to codeword
-positions 1 through 7. The routine is therefore correct for the documented
-sample and for a controlled single-bit error in one of those positions.
+The assembly routine includes a correction branch mapping syndrome values 1 through 7 to codeword positions 1 through 7. The current routine marks when that branch is taken, but does not recompute the full syndrome after correction; therefore correction is not yet independently verified.
 
-The demonstration does not inject a corrupted codeword, recompute the
-syndrome after correction, or distinguish multi-bit errors from correctable
-single-bit errors. It validates the encoded sample rather than the simulator's
-program-memory instruction stream.
+## 3. ErrorDetection.log Integration
 
-## Section 3: Genuine Simulator Defects
+The existing Logger process is reused. The Hamming assembly program writes completion signature `0x48` to RAM address `0x2D` after calculating its result. When the program halts, Core reads the result fields from the CPU snapshot and sends a dedicated `HAMMING` log message over the existing Core-to-Logger pipe.
 
-### 3.1 SUBB carry-in handling
+The Logger routes these messages to `ErrorDetection.log`. Other application messages continue to be written to `simulator.log`.
 
-- **File / Method:** `src/Main/instruction/InstructionExecutor.java`,
-  `InstructionExecutor.execute`, `SUBB_A_IMM` case.
-- **Expected:** 8051 `SUBB` computes `A = A - data - CY`, with CY, AC, and OV
-  calculated from the complete subtraction.
-- **Actual:** The previous implementation computed `A = A - data` and ignored
-  the incoming carry flag.
-- **Fix applied:** The implementation now includes `CY` in the subtrahend and
-  uses it when calculating borrow, auxiliary borrow, and overflow.
+The Hamming log records:
 
-### 3.2 Queue count boundary handling
+- The original sample result (`0x0B`, codeword `0x55`, syndrome `000`).
+- Each decoded instruction in the assembled Hamming demo, its program address, and its encoded byte values.
+- A PASS / CHECK FAILED result for each instruction, based on assembly-executed Hamming nibble checks for every byte.
+- A final instruction count and pass/fail summary.
 
-- **File / Method:** `src/Main/Queue/Queue.java`,
-  `Queue.getContentsInOrder`.
-- **Expected:** Queue contents should only be materialized for counts from
-  `0` through the fixed capacity of `8`.
-- **Actual:** Invalid RAM metadata could produce a negative array size or cause
-  iteration beyond the eight-entry queue contract.
-- **Fix applied:** Counts below `0` or above `8` now produce an explicit
-  `IllegalStateException` instead of a `NegativeArraySizeException` or
-  undefined observation.
+The verifier runs the existing Hamming assembly routine for each possible 4-bit nibble value (0 through 15), then applies those assembly results to the high and low nibbles of every byte in the demo's assembled program. This avoids adding new CPU instructions or registers. No artificial corruption is introduced.
 
-### 3.3 IPC escaped-comma parsing
+## 4. Executed Verification Checks
 
-- **File / Method:** `src/Main/IPC/IPCProtocol.java`,
-  `IPCProtocol.parseSnapshotData`.
-- **Expected:** Escaped commas in status, instruction, or error text must
-  remain part of the field value.
-- **Actual:** Splitting on every comma corrupted values serialized with the
-  protocol's `\c` escape.
-- **Fix applied:** Snapshot fields now split on commas that are not preceded by
-  an escape backslash.
-
-## Section 4: Controlled Validation Tests
-
-| Area | Controlled check | Expected result | Result |
+| Check | Expected result | Observed result | Status |
 |---|---|---|---|
-| Hamming encoding | Encode `0x0B` with even parity | P1=1, P2=0, P4=0, codeword=`0x55` | Verified by bit calculation |
-| Hamming syndrome | Validate the unmodified codeword | Syndrome=`0` | Verified by parity coverage |
-| Hamming correction | Inject one bit flip and use syndrome table | Correct corresponding bit position | Mapping verified; runtime injection not performed |
-| SUBB | Execute subtraction with CY set | Carry-in affects result and flags | Implemented; runtime test pending |
-| Queue | Read count below 0 or above 8 | Explicit state error | Implemented; runtime test pending |
-| IPC | Parse escaped comma in a serialized field | Field remains intact | Implemented; runtime test pending |
+| Compile project using `bash build.sh` | Java and native launcher build successfully | Build completed with `Build OK` | PASS |
+| Assemble and execute Hamming demo | Program reaches HALT | Program reached HALT; completion marker `0x48` was written | PASS |
+| Instruction-by-instruction report | Every assembled instruction is listed with its address and bytes | 176 instructions listed across 372 program bytes | PASS |
+| Assembly Hamming nibble validation | All 16 possible nibble values produce a completed zero-syndrome codeword | All 16 assembly checks passed | PASS |
+| Per-instruction summary | Each instruction's bytes receive Hamming nibble validation | 176 passed, 0 failed | PASS |
+| Hamming sample encoding | Input `0x0B` produces codeword `0x55` | Codeword `0x55` | PASS |
+| Hamming syndrome | Unmodified sample produces syndrome 0 | Syndrome `0` | PASS |
+| Completion marker | Demo writes marker `0x48` to RAM `0x2D` | Marker `0x48` | PASS |
+| No-error correction marker | No correction branch is taken | Marker `0` | PASS |
+| Logger routing | HAMMING records go to `ErrorDetection.log` | Existing Logger routes `HAMMING` messages to the dedicated file; full UI-to-Logger Hamming run still needs team-machine confirmation | PENDING |
 
-![Hamming Demo GUI Evidence](hamming_execution_evidence.png)
+The project compiled successfully. The report helper was executed against the assembled demo and produced 176 instruction records plus one summary record. The legacy IPC suite was attempted but did not complete cleanly in this environment (PAUSE timing, missing `bc`, and a UI shutdown exit status); rerun it on the team's WSL machine. These checks validate the Hamming assembly routine across all possible nibble inputs and produce a per-instruction report for the loaded Hamming demo. They do not demonstrate naturally occurring bit corruption or a correction event.
 
-## Section 5: Unverified Observations & Limitations
+## 5. Simulator Code Review Findings from the Team Review
 
-- The environment used for this review did not have `javac` available, so the
-  Java build and runtime test suite could not be executed here.
-- Single-step execution executes one decoded instruction at a time and does
-  not automatically halt the PC past `0x0170`; reaching that address is not,
-  by itself, a proof that the loaded program has terminated.
-- The Hamming routine is a demonstration over an encoded sample, not a
-  protection layer for existing simulator source code or program-memory bytes.
-- The queue remains assembly-managed through RAM metadata; the observer does
-  not implement enqueue/dequeue operations or normalize invalid head/tail
-  values.
-- Hamming (7,4) correction is reliable for a single-bit error. Multiple
-  simultaneous bit errors require an extended code or additional integrity
-  checks.
+The following changes were reported in the teammate's review. They are retained in the supplied project, but they have not been independently runtime-tested as part of this packaging pass.
 
-## Section 6: Individual Contributions Summary
+### 5.1 SUBB carry-in handling
 
-| Contribution | Week 5 work |
-|---|---|
-| Assembly and UI integration | Editable program source, two-pass assembly, labels, relative branches, and demo loading flow |
-| Hamming demonstration | Even-parity encoding for `0x0B`, codeword construction, syndrome calculation, and single-bit correction mapping |
-| CPU/backend audit and fixes | Corrected `SUBB` carry-in behavior, added queue count validation, and fixed escaped-comma IPC parsing |
-| Verification and documentation | Documented expected Hamming values, controlled validation cases, limitations, and simulator observations |
+- **File / method:** `src/Main/instruction/InstructionExecutor.java`, `SUBB_A_IMM` case.
+- **Expected:** 8051-style `SUBB` computes `A = A - data - CY`.
+- **Reported issue:** Previous implementation ignored incoming carry/borrow.
+- **Reported fix:** Include CY in the subtrahend and calculate borrow-related flags from the complete subtraction.
+- **Verification status:** Code change present; runtime test still required.
 
+### 5.2 Queue count validation
+
+- **File / method:** `src/Main/Queue/Queue.java`, `getContentsInOrder`.
+- **Expected:** Queue contents are materialized only for counts within the capacity range 0–8.
+- **Reported issue:** Invalid metadata could cause invalid array sizing or iteration outside the queue contract.
+- **Reported fix:** Reject count values outside the supported range with an explicit state exception.
+- **Verification status:** Code change present; runtime test still required.
+
+### 5.3 IPC escaped-comma parsing
+
+- **File / method:** `src/Main/IPC/IPCProtocol.java`, `parseSnapshotData`.
+- **Expected:** Escaped commas remain part of the serialized field value.
+- **Reported issue:** Unconditional comma splitting could corrupt escaped values.
+- **Reported fix:** Split only on commas not preceded by an escape backslash.
+- **Verification status:** Code change present; runtime test still required.
+
+These are general software correctness findings from code review, not errors detected by the Hamming algorithm.
+
+## 6. Limitations and Remaining Work
+
+1. The report now covers every decoded instruction byte in the loaded Hamming demo program. It does not scan arbitrary programs loaded by the user.
+2. Program memory and data memory remain separate. Core supplies the program-byte values to the verifier; no new assembly instruction, `DPTR`, or `MOVC` support was added.
+3. The assembly routine generates a fresh Hamming codeword from each nibble and checks its syndrome. This is an encoding/self-consistency validation, not a comparison against parity saved before possible corruption. Therefore it cannot prove that a byte was not already corrupted before the check.
+4. The correction path should be extended to recompute the syndrome after correction before reporting a correction as verified.
+5. Ordinary instruction logic errors are not Hamming-code bit-corruption errors and must not be reported as Hamming findings.
+6. A full GUI/WSL end-to-end run should be performed on the team's demo machine to confirm that the actual `ErrorDetection.log` appears in the project working directory.
+7. The three general code-review changes listed above need the team's runtime verification and evidence.
+
+
+## 7. Conclusion
+
+The Week 5 project now has an assembly-based Hamming (7,4) demonstration and a dedicated logging route through the existing Logger process. The report lists all 176 decoded instructions across the 372-byte Hamming demo program, with 176 passing and zero failing in the assembly-based nibble self-check.
+
+This is a per-instruction Hamming encoding/self-consistency report for the Hamming demo program. It is not a stored-parity comparison and must not be described as proof that pre-existing program-memory corruption was detected or ruled out. A later stored-parity verification stage would be needed for that stronger claim.

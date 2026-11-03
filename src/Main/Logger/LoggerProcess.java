@@ -21,7 +21,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * - Record EXECUTION events
  * - Record ERROR events
  * - Record SYSTEM events
- * - Store logs in a file
+ * - Store general logs in simulator.log
+ * - Store Hamming integrity results in ErrorDetection.log
  * - Handle invalid messages safely
  *
  * <h3>IPC Mode (--ipc)</h3>
@@ -34,8 +35,12 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class LoggerProcess {
 
-    /** Log file path; override with -Dsimulator.log=PATH (default: ./simulator.log). */
+    /** General simulator log path. */
     private static final String LOG_FILE = System.getProperty("simulator.log", "simulator.log");
+
+    /** Dedicated Hamming integrity-check log path. */
+    private static final String ERROR_DETECTION_FILE =
+            System.getProperty("simulator.error.log", "ErrorDetection.log");
 
     /** Sentinel placed on the queue by stop(); tells the worker to finish. */
     private static final LogMessage STOP_MARKER = new LogMessage(LogType.SYSTEM, "stop");
@@ -47,6 +52,7 @@ public class LoggerProcess {
     private Thread loggingThread;
 
     private PrintWriter logWriter;
+    private PrintWriter errorDetectionWriter;
 
     private final DateTimeFormatter timeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -67,9 +73,8 @@ public class LoggerProcess {
         }
 
         try {
-            logWriter = new PrintWriter(
-                    new FileWriter(LOG_FILE, true)
-            );
+            logWriter = new PrintWriter(new FileWriter(LOG_FILE, true));
+            errorDetectionWriter = new PrintWriter(new FileWriter(ERROR_DETECTION_FILE, true));
         } catch (IOException e) {
             System.err.println(
                     "Logger error: Unable to open log file."
@@ -176,7 +181,12 @@ public class LoggerProcess {
         System.out.println(formattedLog);
 
         // File output
-        if (logWriter != null) {
+        if (logMessage.getType() == LogType.HAMMING) {
+            if (errorDetectionWriter != null) {
+                errorDetectionWriter.println(formattedLog);
+                errorDetectionWriter.flush();
+            }
+        } else if (logWriter != null) {
             logWriter.println(formattedLog);
             logWriter.flush();
         }
@@ -207,6 +217,11 @@ public class LoggerProcess {
             logWriter.flush();
             logWriter.close();
             logWriter = null;
+        }
+        if (errorDetectionWriter != null) {
+            errorDetectionWriter.flush();
+            errorDetectionWriter.close();
+            errorDetectionWriter = null;
         }
 
         System.out.println("Logger process stopped.");

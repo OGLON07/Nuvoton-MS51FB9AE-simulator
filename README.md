@@ -50,3 +50,11 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 * Implement the FCFS, Round Robin, and Priority scheduling algorithms.
 * Implement context switching and connect process management with the CPU simulator.
 * Extend the simulator UI to display process and scheduling information.
+
+## 10. Week 5 — Assembly Editor and Hamming Error Detection
+
+The PROGRAM panel accepts editable assembly source. The **HAMMING DEMO** button loads the Hamming (7,4) assembly example into that editor. The assembly routine calculates even-parity bits and a syndrome for its sample codeword.
+
+When the Hamming program reaches HALT, the Core forwards the result produced by the assembly routine through the existing Logger process. Hamming results are written to `ErrorDetection.log`; normal simulator events remain in `simulator.log`.
+
+**Scope note:** the current Hamming example checks its own codeword stored in data RAM. It does not yet scan every loaded program-memory instruction byte. See `docs/WEEK5_HAMMING_IMPLEMENTATION.md` and `docs/WEEK5_OBSERVATION_REPORT.md` for the exact scope, expected values, verification evidence and remaining limitations.

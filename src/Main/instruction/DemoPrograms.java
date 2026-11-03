@@ -54,6 +54,8 @@ public final class DemoPrograms {
                "CPL 0x26\nSJMP CORRECTED\nFIX1: CPL 0x20\nSJMP CORRECTED\nFIX2: CPL 0x21\nSJMP CORRECTED\n" +
                "FIX3: CPL 0x22\nSJMP CORRECTED\nFIX4: CPL 0x23\nSJMP CORRECTED\n" +
                "FIX5: CPL 0x24\nSJMP CORRECTED\nFIX6: CPL 0x25\nSJMP CORRECTED\n" +
-               "CORRECTED: MOV A,#1\nMOV 0x2C,A\nDONE: HALT\n";
+               "CORRECTED: MOV A,#1\nMOV 0x2C,A\n" +
+               "; Completion signature 0x48 identifies a finished Hamming demo to Core/Logger.\n" +
+               "DONE: MOV A,#0x48\nMOV 0x2D,A\nHALT\n";
     }
 }
