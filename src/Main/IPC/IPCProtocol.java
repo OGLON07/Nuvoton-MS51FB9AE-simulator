@@ -235,7 +235,7 @@ public final class IPCProtocol {
         SnapshotData sd = new SnapshotData();
         // Parse key=value pairs separated by commas
         // Some values contain colons (stack, queue) or hex (DM, PM)
-        String[] pairs = data.split(",");
+        String[] pairs = data.split("(?<!\\\\),");
         for (String pair : pairs) {
             int eq = pair.indexOf('=');
             if (eq < 0) continue;

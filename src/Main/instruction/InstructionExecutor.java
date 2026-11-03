@@ -66,14 +66,14 @@ public class InstructionExecutor {
             }
 
             case SUBB_A_IMM: {
-                // Simplified SUBB: A = A - data (the incoming carry is not subtracted).
-                // CY = borrow, AC = borrow from bit 3, OV = signed overflow.
                 int a   = registers.getAccumulator();
                 int imm = instruction.getOperand() & 0xFF;
-                boolean borrow      = a < imm;
-                boolean auxBorrow   = (a & 0x0F) < (imm & 0x0F);
-                boolean borrowFrom6 = (a & 0x7F) < (imm & 0x7F);
-                registers.setAccumulator((a - imm) & 0xFF);
+                int carryIn = registers.isCarry() ? 1 : 0;
+                int subtrahend = imm + carryIn;
+                boolean borrow      = a < subtrahend;
+                boolean auxBorrow   = (a & 0x0F) < ((imm & 0x0F) + carryIn);
+                boolean borrowFrom6 = (a & 0x7F) < (subtrahend & 0x7F);
+                registers.setAccumulator((a - subtrahend) & 0xFF);
                 registers.setCarry(borrow);
                 registers.setAuxiliaryCarry(auxBorrow);
                 registers.setOverflow(borrow != borrowFrom6);
