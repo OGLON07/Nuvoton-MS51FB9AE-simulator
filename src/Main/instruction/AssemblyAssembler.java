@@ -9,10 +9,24 @@ public final class AssemblyAssembler {
     private static final Pattern LABEL = Pattern.compile("^([A-Za-z_][A-Za-z0-9_]*):\\s*(.*)$");
     private AssemblyAssembler() { }
 
-    public static int[] assemble(String source) {
+    public static final class AssemblyResult {
+        public final int[] machineCode;
+        public final Map<Integer, Integer> pcToLine;
+        public final Map<Integer, Integer> lineToPc;
+
+        public AssemblyResult(int[] machineCode, Map<Integer, Integer> pcToLine, Map<Integer, Integer> lineToPc) {
+            this.machineCode = machineCode;
+            this.pcToLine = pcToLine;
+            this.lineToPc = lineToPc;
+        }
+    }
+
+    public static AssemblyResult assembleWithSourceMap(String source) {
         if (source == null || source.trim().isEmpty()) throw new IllegalArgumentException("Program is empty.");
         List<String> lines = new ArrayList<>();
         Map<String, Integer> labels = new HashMap<>();
+        Map<Integer, Integer> pcToLine = new HashMap<>();
+        Map<Integer, Integer> lineToPc = new HashMap<>();
         int pc = 0;
         String[] rawLines = source.replace("\r", "").split("\n");
         for (int lineNo = 0; lineNo < rawLines.length; lineNo++) {
@@ -26,6 +40,8 @@ public final class AssemblyAssembler {
                 if (line.isEmpty()) continue;
             }
             lines.add((lineNo + 1) + "|" + pc + "|" + line);
+            pcToLine.put(pc, lineNo);
+            lineToPc.put(lineNo, pc);
             pc += instructionSize(line, lineNo);
             if (pc > 16384) throw error(lineNo, "Program exceeds 16 KB program memory.");
         }
@@ -45,7 +61,11 @@ public final class AssemblyAssembler {
                 throw error(lineNo, ex.getMessage());
             }
         }
-        return output;
+        return new AssemblyResult(output, pcToLine, lineToPc);
+    }
+
+    public static int[] assemble(String source) {
+        return assembleWithSourceMap(source).machineCode;
     }
 
     private static String stripComment(String line) {
