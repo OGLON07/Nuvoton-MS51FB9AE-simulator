@@ -7,6 +7,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import Main.IPC.IPCProtocol;
+import Main.instruction.AssemblyAssembler;
+import Main.instruction.DemoPrograms;
 
 
 public class SimulatorUI extends JFrame {
@@ -14,7 +16,7 @@ public class SimulatorUI extends JFrame {
     private CoreCommunicator communicator;
 
     // UI Components
-    private final JTextPane programArea = new JTextPane();
+    private final JTextArea programArea = new JTextArea();
     private final JTextArea traceArea = new JTextArea();
     private final JTextArea dataMemoryArea = new JTextArea();
     private final JTextArea stackArea = new JTextArea();
@@ -32,9 +34,11 @@ public class SimulatorUI extends JFrame {
     private final JLabel acLabel = valueLabel();
     private final JLabel ovLabel = valueLabel();
 
-    private final JButton loadButton = new JButton("LOAD");
+    private final JButton loadButton = new JButton("LOAD PROGRAM");
+    private final JButton loadExampleButton = new JButton("LOAD EXAMPLE");
     private final JButton stackDemoButton = new JButton("STACK DEMO");
     private final JButton queueDemoButton = new JButton("QUEUE DEMO");
+    private final JButton hammingDemoButton = new JButton("HAMMING DEMO");
     private final JButton resetButton = new JButton("RESET");
     private final JButton stepButton = new JButton("STEP");
     private final JButton runButton = new JButton("RUN");
@@ -130,11 +134,6 @@ public class SimulatorUI extends JFrame {
             // 5. Update Queue View
             refreshQueuePanel(snapshot);
 
-            // 6. Update Program View
-            if (snapshot.programMemory != null && snapshot.programMemory.length > 0) {
-                refreshProgramPanel(snapshot.programMemory, snapshot.pc);
-            }
-
             // 7. Trace info
             String traceMsg = String.format("PC=0x%04X A=0x%02X SP=0x%02X cycles=%d %s",
                     snapshot.pc, snapshot.acc, snapshot.sp,
@@ -191,13 +190,44 @@ public class SimulatorUI extends JFrame {
         root.add(createBottomPanel(), BorderLayout.SOUTH);
 
         // Connect Button Clicks to IPC Communicator
-        loadButton.addActionListener(e -> sendCommandToCore("LOAD"));
-        stackDemoButton.addActionListener(e -> sendCommandToCore("LOAD_STACK_DEMO"));
-        queueDemoButton.addActionListener(e -> sendCommandToCore("LOAD_QUEUE_DEMO"));
+        loadButton.addActionListener(e -> loadEditorProgram());
+        loadExampleButton.addActionListener(e -> loadDemoSource(DemoPrograms.example(), "Example program"));
+        stackDemoButton.addActionListener(e -> loadDemoSource(DemoPrograms.stack(), "Stack demo"));
+        queueDemoButton.addActionListener(e -> loadDemoSource(DemoPrograms.queue(), "Queue demo"));
+        hammingDemoButton.addActionListener(e -> loadDemoSource(DemoPrograms.hamming(), "Hamming (7,4) demo"));
         resetButton.addActionListener(e -> sendCommandToCore("RESET"));
         stepButton.addActionListener(e -> sendCommandToCore("STEP"));
         runButton.addActionListener(e -> sendCommandToCore("RUN"));
         pauseButton.addActionListener(e -> sendCommandToCore("PAUSE"));
+    }
+
+    private void loadDemoSource(String source, String description) {
+        programArea.setText(source);
+        programArea.setCaretPosition(0);
+        statusLabel.setText("Status: Loading " + description + "...");
+        loadEditorProgram();
+    }
+
+    private void loadEditorProgram() {
+        try {
+            int[] bytes = AssemblyAssembler.assemble(programArea.getText());
+            if (communicator == null) {
+                statusLabel.setText("Status: ERROR (No Communicator Attached)");
+                return;
+            }
+            StringBuilder payload = new StringBuilder();
+            for (int i = 0; i < bytes.length; i++) {
+                if (i > 0) payload.append(',');
+                payload.append(bytes[i]);
+            }
+            communicator.loadProgram(payload.toString());
+            statusLabel.setText("Status: Assembly loaded (" + bytes.length + " bytes)");
+            appendTrace("ASSEMBLER: Successfully assembled " + bytes.length + " bytes.");
+        } catch (IllegalArgumentException ex) {
+            statusLabel.setText("Status: ASSEMBLY ERROR");
+            appendTrace("ASSEMBLY ERROR: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Assembly Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void sendCommandToCore(String command) {
@@ -211,12 +241,17 @@ public class SimulatorUI extends JFrame {
 
     private JPanel createProgramPanel() {
         JPanel panel = titledPanel("PROGRAM");
-        programArea.setEditable(false);
+        programArea.setEditable(true);
         programArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
         programArea.setMargin(new Insets(8, 8, 8, 8));
-        programArea.putClientProperty("JEditorPane.honorDisplayProperties", Boolean.TRUE);
+        programArea.setTabSize(4);
+        programArea.setText("; Type assembly instructions here, or choose a demo below.\n; Example: MOV A,#0x05\n;          ADD A,#0x03\n;          HALT\n");
         panel.add(new JScrollPane(programArea), BorderLayout.CENTER);
-        panel.add(currentInstructionLabel, BorderLayout.SOUTH);
+        JLabel editorHint = new JLabel("Editable assembly source | ';' starts a comment | Labels supported");
+        JPanel south = new JPanel(new BorderLayout());
+        south.add(editorHint, BorderLayout.NORTH);
+        south.add(currentInstructionLabel, BorderLayout.SOUTH);
+        panel.add(south, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -275,8 +310,10 @@ public class SimulatorUI extends JFrame {
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT));
         controls.add(loadButton);
+        controls.add(loadExampleButton);
         controls.add(stackDemoButton);
         controls.add(queueDemoButton);
+        controls.add(hammingDemoButton);
         controls.add(resetButton);
         controls.add(stepButton);
         controls.add(runButton);

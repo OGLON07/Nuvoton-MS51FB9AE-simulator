@@ -119,6 +119,63 @@ public class InstructionSet {
         );
     }
 
+    // ORL A,#data
+    public static Instruction orlAImmediate(int value) {
+        checkByte(value);
+        return new Instruction(Opcode.ORL_A_IMM, value);
+    }
+
+    // XRL A,#data (bitwise XOR; used by Hamming parity calculations)
+    public static Instruction xrlAImmediate(int value) {
+        checkByte(value);
+        return new Instruction(Opcode.XRL_A_IMM, value);
+    }
+
+    // Conditional jumps use signed 8-bit relative offsets.
+    public static Instruction jz(int offset) {
+        checkRelative(offset);
+        return new Instruction(Opcode.JZ, offset);
+    }
+
+    public static Instruction jnz(int offset) {
+        checkRelative(offset);
+        return new Instruction(Opcode.JNZ, offset);
+    }
+
+    // Bit-addressable internal RAM operations (bit address 00h-7Fh).
+    public static Instruction jb(int bitAddress, int offset) {
+        checkBitAddress(bitAddress); checkRelative(offset);
+        return new Instruction(Opcode.JB, bitAddress, offset);
+    }
+
+    public static Instruction jnb(int bitAddress, int offset) {
+        checkBitAddress(bitAddress); checkRelative(offset);
+        return new Instruction(Opcode.JNB, bitAddress, offset);
+    }
+
+    public static Instruction setb(int bitAddress) {
+        checkBitAddress(bitAddress);
+        return new Instruction(Opcode.SETB, bitAddress);
+    }
+
+    public static Instruction clrBit(int bitAddress) {
+        checkBitAddress(bitAddress);
+        return new Instruction(Opcode.CLR_BIT, bitAddress);
+    }
+
+    public static Instruction cplBit(int bitAddress) {
+        checkBitAddress(bitAddress);
+        return new Instruction(Opcode.CPL_BIT, bitAddress);
+    }
+
+    private static void checkRelative(int offset) {
+        if (offset < -128 || offset > 127) throw new IllegalArgumentException("Relative offset must be -128..127");
+    }
+
+    private static void checkBitAddress(int address) {
+        if (address < 0 || address > 0x7F) throw new IllegalArgumentException("Bit address must be 0x00..0x7F");
+    }
+
     // SJMP rel
     public static Instruction sjmp(int offset) {
 
