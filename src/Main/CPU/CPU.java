@@ -130,6 +130,53 @@ public class CPU {
                 decodedInstruction = new Instruction(Opcode.ANL_A_IMM, operand);
                 break;
             }
+            // ORL A,#data
+            case 0x44: {
+                int operand = memory.readProgram(registers.getPC());
+                registers.setPC(registers.getPC() + 1);
+                decodedInstruction = new Instruction(Opcode.ORL_A_IMM, operand);
+                break;
+            }
+
+            // XRL A,#data
+            case 0x64: {
+                int operand = memory.readProgram(registers.getPC());
+                registers.setPC(registers.getPC() + 1);
+                decodedInstruction = new Instruction(Opcode.XRL_A_IMM, operand);
+                break;
+            }
+
+            // Conditional relative jumps
+            case 0x60:
+            case 0x70: {
+                int rel = memory.readProgram(registers.getPC());
+                registers.setPC(registers.getPC() + 1);
+                if (rel >= 128) rel -= 256;
+                decodedInstruction = new Instruction(fetchedOpcode == 0x60 ? Opcode.JZ : Opcode.JNZ, rel);
+                break;
+            }
+
+            // JB bit,rel / JNB bit,rel
+            case 0x20:
+            case 0x30: {
+                int bit = memory.readProgram(registers.getPC());
+                int rel = memory.readProgram(registers.getPC() + 1);
+                registers.setPC(registers.getPC() + 2);
+                if (rel >= 128) rel -= 256;
+                decodedInstruction = new Instruction(fetchedOpcode == 0x20 ? Opcode.JB : Opcode.JNB, bit, rel);
+                break;
+            }
+
+            // SETB bit / CLR bit
+            case 0xD2:
+            case 0xC2:
+            case 0xB2: {
+                int bit = memory.readProgram(registers.getPC());
+                registers.setPC(registers.getPC() + 1);
+                Opcode bitOp = fetchedOpcode == 0xD2 ? Opcode.SETB : (fetchedOpcode == 0xC2 ? Opcode.CLR_BIT : Opcode.CPL_BIT);
+                decodedInstruction = new Instruction(bitOp, bit);
+                break;
+            }
 
             // INC A
             case 0x04:

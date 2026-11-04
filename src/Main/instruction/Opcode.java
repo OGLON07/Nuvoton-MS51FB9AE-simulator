@@ -17,6 +17,16 @@ public enum Opcode {
     MUL_AB(0xA4),
 
     ANL_A_IMM(0x54),
+    ORL_A_IMM(0x44),
+    XRL_A_IMM(0x64),
+
+    JZ(0x60),
+    JNZ(0x70),
+    JB(0x20),
+    JNB(0x30),
+    SETB(0xD2),
+    CLR_BIT(0xC2),
+    CPL_BIT(0xB2),
 
     SJMP(0x80),
 

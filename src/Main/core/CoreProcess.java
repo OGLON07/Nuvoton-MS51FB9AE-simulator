@@ -8,6 +8,8 @@ import Main.core.command.CommandMessage;
 import Main.core.command.CommandResponse;
 import Main.core.state.CoreStateSnapshot;
 import Main.IPC.IPCProtocol;
+import Main.instruction.AssemblyAssembler;
+import Main.instruction.DemoPrograms;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -15,6 +17,7 @@ import java.io.PrintWriter;
 import java.io.OutputStreamWriter;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Standalone headless entry point for the simulator Core process.
@@ -275,6 +278,7 @@ public class CoreProcess {
             logOut = new PrintWriter(new OutputStreamWriter(System.err), true);
         }
         final PrintWriter logs = logOut;
+        final AtomicBoolean hammingResultLogged = new AtomicBoolean(false);
 
         // The Week-3 CPU prints FETCH/DECODE lines to System.out. Those must
         // never reach the IPC channels, so they are discarded here.
@@ -295,6 +299,7 @@ public class CoreProcess {
         // RUN worker pushes STATE updates; log once when it stops.
         handler.setStateListener(snapshot -> {
             send(responseOut, IPCProtocol.serializeResponse(CommandResponse.ok(snapshot)));
+            logHammingResultIfComplete(logs, snapshot, hammingResultLogged);
             if (!snapshot.isExecuting()) {
                 log(logs, snapshot.getLastError() != null ? LogType.ERROR : LogType.EXECUTION,
                         "RUN stopped: " + snapshot.getStatus(),
@@ -323,6 +328,12 @@ public class CoreProcess {
 
                     CommandResponse response = handler.handleCommand(msg);
                     send(responseOut, IPCProtocol.serializeResponse(response));
+                    if (msg.getCommand() == Command.LOAD || msg.getCommand() == Command.RESET) {
+                        hammingResultLogged.set(false);
+                    }
+                    if (response.isSuccess() && response.getSnapshot() != null) {
+                        logHammingResultIfComplete(logs, response.getSnapshot(), hammingResultLogged);
+                    }
                     logCommandResult(logs, msg, response);
 
                     if (msg.getCommand() == Command.SHUTDOWN) {
@@ -342,6 +353,150 @@ public class CoreProcess {
             handler.handleCommand(new CommandMessage(Command.SHUTDOWN));
             log(logs, LogType.SYSTEM, "Core process shutting down", null);
             logs.close();           // closes fd 3 -> Logger sees EOF and exits
+        }
+    }
+
+    /**
+     * Records the result produced by the Hamming assembly routine.
+     * The assembly program writes signature 0x48 to RAM[0x2D] only after
+     * its parity/syndrome routine reaches completion. Core only transports
+     * the already-computed assembly result; it does not calculate parity.
+     */
+    private static void logHammingResultIfComplete(PrintWriter logs,
+                                                    CoreStateSnapshot snapshot,
+                                                    AtomicBoolean alreadyLogged) {
+        if (snapshot == null || !snapshot.isHalted() || alreadyLogged.get()) {
+            return;
+        }
+        int[] ram = snapshot.getDataMemory();
+        if (ram.length <= 0x2D || ram[0x2D] != 0x48) {
+            return;
+        }
+        if (!alreadyLogged.compareAndSet(false, true)) {
+            return;
+        }
+
+        int input = ram[0x20] & 0x0F;
+        int codeword = ram[0x24] & 0x7F;
+        int syndrome = ram[0x2B] & 0x07;
+        int correctionMarker = ram[0x2C] & 0xFF;
+        String status = syndrome == 0 ? "NO ERROR DETECTED" : "ERROR DETECTED";
+        String syndromeBits = String.format("%3s", Integer.toBinaryString(syndrome)).replace(' ', '0');
+        String details = String.format(
+                "input=0x%X codeword=0x%02X syndrome=%d (0b%s) correctionMarker=%d; " +
+                "scope=Hamming demo codeword in data RAM (not the entire program memory)",
+                input, codeword, syndrome, syndromeBits, correctionMarker);
+        log(logs, LogType.HAMMING, status, details);
+        logHammingProgramByteReport(logs, snapshot);
+    }
+
+    /**
+     * Produces an instruction-by-instruction report for the loaded Hamming demo.
+     * Each program byte is split into two nibbles. For each possible nibble,
+     * the existing Hamming assembly routine is executed once and its syndrome
+     * is read from RAM. Java only coordinates the runs and formats the report;
+     * parity and syndrome calculations remain in the assembly program.
+     *
+     * This is an assembly-codeword self-check, not a comparison with parity
+     * saved before a possible ROM corruption.
+     */
+    private static void logHammingProgramByteReport(PrintWriter logs, CoreStateSnapshot snapshot) {
+        int[] program = snapshot.getProgramMemory();
+        int size = Math.min(snapshot.getProgramSize(), program.length);
+        if (size == 0) return;
+
+        boolean[] nibblePassed = new boolean[16];
+        String assembly = DemoPrograms.hamming();
+        for (int nibble = 0; nibble < 16; nibble++) {
+            String input = String.format("MOV A,#0x%02X", nibble);
+            String testProgram = assembly.replaceFirst("MOV A,#0x0B", input);
+            try {
+                CPU verifier = new CPU();
+                verifier.getMemory().loadProgram(AssemblyAssembler.assemble(testProgram));
+                verifier.run();
+                int completion = verifier.getMemory().readData(0x2D);
+                int syndrome = verifier.getMemory().readData(0x2B) & 0x07;
+                nibblePassed[nibble] = verifier.isHalted()
+                        && completion == 0x48
+                        && syndrome == 0;
+            } catch (RuntimeException ex) {
+                nibblePassed[nibble] = false;
+            }
+        }
+
+        int instructionCount = 0;
+        int byteAddress = 0;
+        int passedInstructions = 0;
+        while (byteAddress < size) {
+            int opcode = program[byteAddress] & 0xFF;
+            int length = instructionLength(opcode);
+            if (byteAddress + length > size) length = 1;
+            boolean passed = true;
+            StringBuilder bytes = new StringBuilder();
+            for (int i = 0; i < length; i++) {
+                int value = program[byteAddress + i] & 0xFF;
+                if (i > 0) bytes.append(' ');
+                bytes.append(String.format("%02X", value));
+                passed &= nibblePassed[(value >>> 4) & 0x0F] && nibblePassed[value & 0x0F];
+            }
+            String mnemonic = instructionName(opcode);
+            String result = passed ? "PASS" : "CHECK FAILED";
+            if (passed) passedInstructions++;
+            log(logs, LogType.HAMMING,
+                    String.format("Instruction %03d %s | %s", ++instructionCount, mnemonic, result),
+                    String.format("address=0x%04X bytes=[%s] hammingNibbleChecks=%s; "
+                            + "validation=assembly-generated-codeword-self-check; "
+                            + "doesNotCompareAgainstPreviouslyStoredParity",
+                            byteAddress, bytes, passed ? "PASS" : "FAIL"));
+            byteAddress += length;
+        }
+        log(logs, LogType.HAMMING,
+                passedInstructions == instructionCount ? "HAMMING DEMO PROGRAM PASSED" : "HAMMING DEMO PROGRAM CHECK FAILED",
+                String.format("instructionsChecked=%d passed=%d failed=%d programBytes=%d; "
+                        + "scope=loaded Hamming demo program bytes; no stored pre-corruption parity reference",
+                        instructionCount, passedInstructions, instructionCount - passedInstructions, size));
+    }
+
+    private static int instructionLength(int opcode) {
+        switch (opcode) {
+            case 0x74: case 0x78: case 0x79: case 0x7A: case 0x7B:
+            case 0x7C: case 0x7D: case 0x7E: case 0x7F:
+            case 0x24: case 0x94: case 0x54: case 0x44: case 0x64:
+            case 0x60: case 0x70: case 0x80: case 0xE5: case 0xF5:
+            case 0xD2: case 0xC2: case 0xB2: return 2;
+            case 0x20: case 0x30: case 0x75: return 3;
+            default: return 1;
+        }
+    }
+
+    private static String instructionName(int opcode) {
+        switch (opcode) {
+            case 0x74: return "MOV A,#imm";
+            case 0x78: case 0x79: case 0x7A: case 0x7B: case 0x7C: case 0x7D: case 0x7E: case 0x7F: return "MOV Rn,#imm";
+            case 0x75: return "MOV direct,#imm";
+            case 0xE5: return "MOV A,direct";
+            case 0xF5: return "MOV direct,A";
+            case 0x24: return "ADD A,#imm";
+            case 0x94: return "SUBB A,#imm";
+            case 0x54: return "ANL A,#imm";
+            case 0x44: return "ORL A,#imm";
+            case 0x64: return "XRL A,#imm";
+            case 0x30: return "JNB bit,rel";
+            case 0x20: return "JB bit,rel";
+            case 0x60: return "JZ rel";
+            case 0x70: return "JNZ rel";
+            case 0x80: return "SJMP rel";
+            case 0xD2: return "SETB bit";
+            case 0xC2: return "CLR bit";
+            case 0xB2: return "CPL bit";
+            case 0x04: return "INC A";
+            case 0x14: return "DEC A";
+            case 0xA4: return "MUL AB";
+            case 0xC0: return "PUSH A";
+            case 0xD0: return "POP A";
+            case 0x00: return "NOP";
+            case 0xFF: return "HALT";
+            default: return String.format("DB 0x%02X", opcode);
         }
     }
 

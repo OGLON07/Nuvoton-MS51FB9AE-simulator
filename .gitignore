@@ -31,3 +31,4 @@ desktop.ini
 # --- Week 4 build/test artefacts ---
 out/
 benchmark/*.txt
+ErrorDetection.log

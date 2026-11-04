@@ -51,5 +51,9 @@ Design and implement a simulator for the Nuvoton MS51FB9AE processor. The softwa
 * Implement context switching and connect process management with the CPU simulator.
 * Extend the simulator UI to display process and scheduling information.
 
-## 10. Week 4: Three-Process Simulator (UI / Core / Logger over POSIX pipes)
-See [docs/WEEK4_IPC.md](docs/WEEK4_IPC.md) for architecture, IPC justification, protocol, thread model, test results and benchmark.
+## 10. Week 5 — Assembly Editor and Hamming Error Detection
+
+The PROGRAM panel accepts editable assembly source. The **HAMMING DEMO** button loads the Hamming (7,4) assembly example into that editor. The assembly routine calculates even-parity bits and a syndrome for its sample codeword.
+
+When the Hamming program reaches HALT, the Core forwards the result produced by the assembly routine through the existing Logger process. Hamming results are written to `ErrorDetection.log`; normal simulator events remain in `simulator.log`.
+

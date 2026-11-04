@@ -97,6 +97,10 @@ public class Queue {
     public int[] getContentsInOrder() {
 
         int count = getCount();
+        if (count < 0 || count > CAPACITY) {
+            throw new IllegalStateException(
+                    "Queue count must be between 0 and " + CAPACITY + ": " + count);
+        }
         int head = getHead();
         int[] contents = new int[count];
 
